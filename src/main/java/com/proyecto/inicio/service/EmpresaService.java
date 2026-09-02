@@ -21,13 +21,17 @@ public class EmpresaService {
 
     @Transactional
     public EmpresaResponseDto crear(EmpresaRequestDto request) {
-        validarDatosObligatorios(request);
+        
+        validarDatosObligatorios(request);// se revisa que la info si venga completa
 
+        // quitamos espacios que el usuario pudo escribir antes o después del nit
         String nit = request.getNit().trim();
+    
         if (empresaRepository.existsByNit(nit)) {
             throw new IllegalArgumentException("Ya existe una empresa registrada con ese NIT");
         }
 
+        // armamos la empresa con los datos que llegan desde el formulario
         Empresa empresa = new Empresa(
                 null,
                 request.getNombre().trim(),
@@ -40,6 +44,7 @@ public class EmpresaService {
 
     @Transactional(readOnly = true)
     public List<EmpresaResponseDto> consultarTodas() {
+        // devolvemos dto para no exponer directamente la entidad de la base de datos
         return empresaRepository.findAll()
                 .stream()
                 .map(this::mapearRespuesta)
@@ -58,6 +63,7 @@ public class EmpresaService {
         Empresa empresa = buscarEmpresa(id);
         String nit = request.getNit().trim();
 
+        // si cambió el nit, comprobamos que el nuevo tampoco esté ocupado
         if (!empresa.getNit().equals(nit) && empresaRepository.existsByNit(nit)) {
             throw new IllegalArgumentException("Ya existe una empresa registrada con ese NIT");
         }
@@ -71,6 +77,7 @@ public class EmpresaService {
 
     @Transactional
     public void eliminar(Long id) {
+        // primero buscamos la empresa para dar un error claro si no existe
         empresaRepository.delete(buscarEmpresa(id));
     }
 
@@ -102,6 +109,7 @@ public class EmpresaService {
     }
 
     private EmpresaResponseDto mapearRespuesta(Empresa empresa) {
+        // convertimos la entidad en el objeto que se entrega hacia afuera
         return new EmpresaResponseDto(
                 empresa.getId(),
                 empresa.getNombre(),
