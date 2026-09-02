@@ -1,49 +1,55 @@
 package com.proyecto.inicio.controller;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
+import com.proyecto.inicio.dto.request.EmpresaRequestDto;
+import com.proyecto.inicio.dto.response.EmpresaResponseDto;
+import com.proyecto.inicio.service.EmpresaService;
+
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/empresas")
 public class EmpresaController {
 
+    private final EmpresaService empresaService;
+
+    public EmpresaController(EmpresaService empresaService) {
+        this.empresaService = empresaService;
+    }
+
     // CONSULTAR TODAS LAS EMPRESAS
     @GetMapping
-    public String getEmpresas() {
-        return "Lista de empresas";
+    public List<EmpresaResponseDto> getEmpresas() {
+        return empresaService.consultarTodas();
     }
 
     // CONSULTAR UNA EMPRESA
     @GetMapping("/{id}")
-    public String getEmpresa(@PathVariable Long id) {
-        return "Empresa con id: " + id;
+    public EmpresaResponseDto getEmpresa(@PathVariable Long id) {
+        return empresaService.consultarPorId(id);
     }
 
     // CREAR UNA EMPRESA
     @PostMapping
-    public String crearEmpresa(@RequestBody String empresa) {
-        return "Empresa creada: " + empresa;
+    public EmpresaResponseDto crearEmpresa(
+            @RequestBody EmpresaRequestDto request) {
+
+        return empresaService.crear(request);
     }
 
     // ACTUALIZAR UNA EMPRESA
     @PutMapping("/{id}")
-    public String actualizarEmpresa(
+    public EmpresaResponseDto actualizarEmpresa(
             @PathVariable Long id,
-            @RequestBody String empresa) {
+            @RequestBody EmpresaRequestDto request) {
 
-        return "Empresa con id " + id + " actualizada: " + empresa;
+        return empresaService.actualizar(id, request);
     }
 
     // ELIMINAR UNA EMPRESA
     @DeleteMapping("/{id}")
-    public String eliminarEmpresa(@PathVariable Long id) {
-        return "Empresa con id " + id + " eliminada";
+    public void eliminarEmpresa(@PathVariable Long id) {
+        empresaService.eliminar(id);
     }
 }
-
