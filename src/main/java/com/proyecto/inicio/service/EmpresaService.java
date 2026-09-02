@@ -33,12 +33,13 @@ public class EmpresaService {
 
         // armamos la empresa con los datos que llegan desde el formulario
         Empresa empresa = new Empresa(
-                null,
-                request.getNombre().trim(),
-                nit,
-                request.getCorreoContacto().trim()
-        );
-
+        null,
+        request.getNombre().trim(),
+        nit,
+        request.getCorreoContacto().trim(),
+        true,
+        null
+);
         return mapearRespuesta(empresaRepository.save(empresa));
     }
 
@@ -109,12 +110,13 @@ public class EmpresaService {
     }
 
     private EmpresaResponseDto mapearRespuesta(Empresa empresa) {
-        // convertimos la entidad en el objeto que se entrega hacia afuera
-        return new EmpresaResponseDto(
-                empresa.getId(),
-                empresa.getNombre(),
-                empresa.getNit(),
-                empresa.getCorreoContacto()
-        );
+    return new EmpresaResponseDto(
+            empresa.getId(),
+            empresa.getNombre(),
+            empresa.getNit(),
+            empresa.getCorreoContacto(),
+            empresa.getActivo(),
+            empresa.getFechaCreacion()
+    );
     }
 }

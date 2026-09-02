@@ -6,10 +6,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+
 
 @Entity
 @Table(name = "empresas")
@@ -19,16 +22,23 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Empresa {
 
-    @Id
+     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 150)
     private String nombre;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, length = 30)
     private String nit;
 
-    @Column(name = "correo_contacto", nullable = false)
+    @Column(name = "correo_contacto", nullable = false, length = 254)
     private String correoContacto;
+
+    @Column(nullable = false)
+    private Boolean activo = true;
+
+    @Column( name = "fecha_creacion",nullable = false, insertable = false, updatable = false)
+    private OffsetDateTime fechaCreacion;
+    
 }
