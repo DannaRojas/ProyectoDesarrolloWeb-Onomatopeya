@@ -3,7 +3,11 @@ package com.proyecto.inicio.service;
 import com.proyecto.inicio.dto.request.EmpresaRequestDto;
 import com.proyecto.inicio.dto.response.EmpresaResponseDto;
 import com.proyecto.inicio.entity.Empresa;
+import com.proyecto.inicio.entity.Usuario;
+import com.proyecto.inicio.entity.enums.EstadoUsuario;
+import com.proyecto.inicio.entity.enums.RolAcceso;
 import com.proyecto.inicio.repository.EmpresaRepository;
+import com.proyecto.inicio.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,37 +18,61 @@ import java.util.List;
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public EmpresaService(EmpresaRepository empresaRepository) {
+    public EmpresaService(EmpresaRepository empresaRepository, UsuarioRepository usuarioRepository) {
         this.empresaRepository = empresaRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
+    /**
+     * Regla de negocio: Crear empresa y su usuario administrador inicial en la misma transacción.
+     */
     @Transactional
-    public EmpresaResponseDto crear(EmpresaRequestDto request) {
+    public EmpresaResponseDto crearEmpresaConAdminInicial(
+            EmpresaRequestDto request, 
+            String nombreAdmin, 
+            String correoAdmin, 
+            String passwordHashAdmin) {
         
-        validarDatosObligatorios(request);// se revisa que la info si venga completa
-
-        // quitamos espacios que el usuario pudo escribir antes o después del nit
+        validarDatosObligatorios(request);
         String nit = request.getNit().trim();
-    
+
         if (empresaRepository.existsByNit(nit)) {
             throw new IllegalArgumentException("Ya existe una empresa registrada con ese NIT");
         }
 
-        // armamos la empresa con los datos que llegan desde el formulario
-        Empresa empresa = new Empresa(
-                null,
-                request.getNombre().trim(),
-                nit,
-                request.getCorreoContacto().trim()
-        );
+        if (usuarioRepository.existsByCorreo(correoAdmin.trim())) {
+            throw new IllegalArgumentException("Ya existe un usuario registrado con ese correo");
+        }
 
-        return mapearRespuesta(empresaRepository.save(empresa));
+        // 1. Guardar la empresa usando el patrón Builder de Lombok
+        Empresa empresa = Empresa.builder()
+                .nombre(request.getNombre().trim())
+                .nit(nit)
+                .correoContacto(request.getCorreoContacto().trim())
+                .activo(true)
+                .build();
+
+        Empresa empresaGuardada = empresaRepository.save(empresa);
+
+        // 2. Guardar el usuario administrador inicial en la misma transacción
+        Usuario adminInicial = Usuario.builder()
+                .empresa(empresaGuardada)
+                .nombre(nombreAdmin.trim())
+                .correo(correoAdmin.trim())
+                .passwordHash(passwordHashAdmin)
+                .rolAcceso(RolAcceso.ADMINISTRADOR)
+                .estado(EstadoUsuario.ACTIVO)
+                .build();
+
+        usuarioRepository.save(adminInicial);
+
+        return mapearRespuesta(empresaGuardada);
     }
 
     @Transactional(readOnly = true)
     public List<EmpresaResponseDto> consultarTodas() {
-        // devolvemos dto para no exponer directamente la entidad de la base de datos
         return empresaRepository.findAll()
                 .stream()
                 .map(this::mapearRespuesta)
@@ -63,7 +91,6 @@ public class EmpresaService {
         Empresa empresa = buscarEmpresa(id);
         String nit = request.getNit().trim();
 
-        // si cambió el nit, comprobamos que el nuevo tampoco esté ocupado
         if (!empresa.getNit().equals(nit) && empresaRepository.existsByNit(nit)) {
             throw new IllegalArgumentException("Ya existe una empresa registrada con ese NIT");
         }
@@ -75,10 +102,14 @@ public class EmpresaService {
         return mapearRespuesta(empresaRepository.save(empresa));
     }
 
+    /**
+     * Regla de negocio: No borrar físicamente empresas. Realizar borrado lógico (desactivación).
+     */
     @Transactional
-    public void eliminar(Long id) {
-        // primero buscamos la empresa para dar un error claro si no existe
-        empresaRepository.delete(buscarEmpresa(id));
+    public void desactivar(Long id) {
+        Empresa empresa = buscarEmpresa(id);
+        empresa.setActivo(false);
+        empresaRepository.save(empresa);
     }
 
     private Empresa buscarEmpresa(Long id) {
@@ -109,7 +140,6 @@ public class EmpresaService {
     }
 
     private EmpresaResponseDto mapearRespuesta(Empresa empresa) {
-        // convertimos la entidad en el objeto que se entrega hacia afuera
         return new EmpresaResponseDto(
                 empresa.getId(),
                 empresa.getNombre(),
