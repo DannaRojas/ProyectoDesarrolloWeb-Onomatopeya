@@ -29,10 +29,9 @@ public class HistorialCambio {
     @JoinColumn(name = "empresa_contexto_id", nullable = false)
     private Empresa empresaContexto;
 
-    // Añadir cuando proceso ya este completa
-    //@ManyToOne(fetch = FetchType.LAZY)
-    //@JoinColumn(name = "proceso_id")
-    //private Proceso proceso;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proceso_id")
+    private Proceso proceso;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "actor_id")
