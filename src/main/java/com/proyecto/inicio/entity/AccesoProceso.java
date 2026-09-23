@@ -18,10 +18,9 @@ public class AccesoProceso {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Añadir cuando proceso ya este completa 
-    //@ManyToOne(optional = false, fetch = FetchType.LAZY)
-    //@JoinColumn(name = "proceso_id", nullable = false)
-    //private Proceso proceso;
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "proceso_id", nullable = false)
+    private Proceso proceso;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa_invitada_id", nullable = false)

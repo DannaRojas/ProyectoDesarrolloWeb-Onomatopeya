@@ -1,81 +1,54 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.dto.request.RolProcesoRequestDto;
-import com.proyecto.inicio.dto.response.RolProcesoResponseDto;
-import com.proyecto.inicio.entity.Empresa;
+import com.proyecto.inicio.dto.request.LaneRequestDto;
+import com.proyecto.inicio.dto.response.LaneResponseDto;
+import com.proyecto.inicio.entity.Lane;
+import com.proyecto.inicio.entity.Pool;
 import com.proyecto.inicio.entity.RolProceso;
-import com.proyecto.inicio.repository.EmpresaRepository;
 import com.proyecto.inicio.repository.LaneRepository;
+import com.proyecto.inicio.repository.PoolRepository;
 import com.proyecto.inicio.repository.RolProcesoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class RolProcesoService {
-
-    private final RolProcesoRepository rolProcesoRepository;
-    private final EmpresaRepository empresaRepository;
+public class LaneService {
     private final LaneRepository laneRepository;
+    private final PoolRepository poolRepository;
+    private final RolProcesoRepository rolProcesoRepository;
 
     @Transactional
-    public RolProcesoResponseDto crear(RolProcesoRequestDto request) {
-
-        Empresa empresa = empresaRepository.findById(request.getEmpresaId())
-                .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
-
-        if (rolProcesoRepository.existsByEmpresaIdAndNombre(
-                empresa.getId(), request.getNombre())) {
-            throw new IllegalArgumentException(
-                    "Ya existe un rol de proceso con ese nombre en la empresa");
-        }
-
-        RolProceso rolProceso = RolProceso.builder()
-                .empresa(empresa)
-                .nombre(request.getNombre())
-                .descripcion(request.getDescripcion())
-                .activo(true)
-                .build();
-
-        return convertirAResponse(rolProcesoRepository.save(rolProceso));
+    public LaneResponseDto crear(LaneRequestDto request) {
+        Pool pool = poolRepository.findById(request.getPoolId())
+                .orElseThrow(() -> new EntityNotFoundException("Pool no encontrado"));
+        RolProceso rol = rolProcesoRepository.findById(request.getRolProcesoId())
+                .orElseThrow(() -> new EntityNotFoundException("Rol de proceso no encontrado"));
+        if (!pool.getProceso().getEmpresa().getId().equals(rol.getEmpresa().getId()))
+            throw new IllegalArgumentException("La lane y su rol deben pertenecer a la misma empresa");
+        Lane lane = Lane.builder().pool(pool).rolProceso(rol).orden(request.getOrden())
+                .altura(request.getAltura()).activo(true).build();
+        return convertir(laneRepository.save(lane));
     }
 
     @Transactional(readOnly = true)
-    public List<RolProcesoResponseDto> listarPorEmpresa(Long empresaId) {
-        return rolProcesoRepository.findByEmpresaIdAndActivoTrue(empresaId)
-                .stream()
-                .map(this::convertirAResponse)
-                .toList();
+    public List<LaneResponseDto> listarPorPool(Long poolId) {
+        return laneRepository.findByPoolIdAndActivoTrueOrderByOrden(poolId).stream().map(this::convertir).toList();
     }
 
     @Transactional
-    public void retirar(Long rolProcesoId, Long empresaId) {
-
-        RolProceso rolProceso = rolProcesoRepository
-                .findByIdAndEmpresaIdAndActivoTrue(rolProcesoId, empresaId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Rol de proceso no encontrado o no pertenece a la empresa"));
-
-        if (laneRepository.existsByRolProcesoIdAndActivoTrue(rolProcesoId)) {
-            throw new IllegalStateException(
-                    "No se puede retirar el rol porque está siendo usado por una lane");
-        }
-
-        rolProceso.setActivo(false);
-        rolProcesoRepository.save(rolProceso);
+    public void retirar(Long laneId, Long poolId) {
+        Lane lane = laneRepository.findByIdAndPoolIdAndActivoTrue(laneId, poolId)
+                .orElseThrow(() -> new EntityNotFoundException("Lane no encontrada en el pool"));
+        lane.setActivo(false);
+        laneRepository.save(lane);
     }
 
-    private RolProcesoResponseDto convertirAResponse(RolProceso rolProceso) {
-        return new RolProcesoResponseDto(
-                rolProceso.getId(),
-                rolProceso.getEmpresa().getId(),
-                rolProceso.getNombre(),
-                rolProceso.getDescripcion(),
-                rolProceso.getActivo()
-        );
+    private LaneResponseDto convertir(Lane lane) {
+        return new LaneResponseDto(lane.getId(), lane.getPool().getId(), lane.getRolProceso().getId(),
+                lane.getRolProceso().getNombre(), lane.getOrden(), lane.getAltura(), lane.getActivo());
     }
 }
