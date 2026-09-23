@@ -1,20 +1,13 @@
 package com.proyecto.inicio.repository;
 
-import com.proyecto.inicio.entity.Pool;
+import com.proyecto.inicio.entity.Lane;
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 import java.util.Optional;
 
-public interface PoolRepository extends JpaRepository<Pool, Long> {
-
-    boolean existsByProcesoIdAndPropietarioTrueAndActivoTrue(Long procesoId);
-
-    List<Pool> findByProcesoIdAndActivoTrue(Long procesoId);
+public interface LaneRepository extends JpaRepository<Lane, Long> {
     boolean existsByPoolIdAndActivoTrue(Long poolId);
-
-    Optional<Pool> findByIdAndProcesoIdAndActivoTrue(
-            Long id,
-            Long procesoId
-    );
+    boolean existsByRolProcesoIdAndActivoTrue(Long rolProcesoId);
+    List<Lane> findByPoolIdAndActivoTrueOrderByOrden(Long poolId);
+    Optional<Lane> findByIdAndPoolIdAndActivoTrue(Long id, Long poolId);
 }
