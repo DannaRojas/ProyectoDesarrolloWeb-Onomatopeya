@@ -28,7 +28,7 @@ public class ValidacionMensajesService {
         for (Mensaje m : declaraciones) {
             if (m.getNodo().getEstado() == EstadoNodo.RETIRADO || !Boolean.TRUE.equals(m.getNodo().getPool().getActivo()))
                 avisos.add("Mensaje " + m.getId() + ": su nodo o pool fue retirado.");
-            if (m.getNodo() instanceof Evento evento && evento.getTipo() == TipoEvento.INTERMEDIO
+            if (org.hibernate.Hibernate.unproxy(m.getNodo()) instanceof Evento evento && evento.getTipo() == TipoEvento.INTERMEDIO
                     && m.getSentido() == SentidoMensaje.RECEPCION && clave(m) == null)
                 avisos.add("Mensaje " + m.getId() + ": la recepción intermedia no tiene correlación.");
             boolean conectado = conexiones.stream().anyMatch(f -> m.getSentido() == SentidoMensaje.ENVIO

@@ -1,0 +1,399 @@
+{
+  "info": {
+    "name": "Onomatopeya - Mensajes de Sebastián",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejemplos preparados, no ejecutados en Postman. Requiere esquema migrado, nodos y login real. Sin sesión, los endpoints devuelven 401. No ejecutar el runner contra la base compartida sin acordarlo con el equipo. Revisar docs/SEBASTIAN-MENSAJES.md. El permiso de estructura todavía no está integrado en servicios anteriores."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8081"
+    },
+    {
+      "key": "procesoId",
+      "value": ""
+    },
+    {
+      "key": "nodoEnvioId",
+      "value": ""
+    },
+    {
+      "key": "nodoRecepcionId",
+      "value": ""
+    },
+    {
+      "key": "poolOrigenId",
+      "value": ""
+    },
+    {
+      "key": "poolDestinoId",
+      "value": ""
+    },
+    {
+      "key": "actividadId",
+      "value": ""
+    },
+    {
+      "key": "mensajeId",
+      "value": ""
+    },
+    {
+      "key": "mensajeRecepcionId",
+      "value": ""
+    },
+    {
+      "key": "versionMensaje",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Secuencia en datos de prueba autorizados",
+      "item": [
+        {
+          "name": "1 - Listar mensajes (requiere sesión)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2 - Declarar envío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nodoId\": \"{{nodoEnvioId}}\",\n  \"sentido\": \"ENVIO\",\n  \"nombre\": \"Solicitud\",\n  \"origenExterno\": false,\n  \"correlacionTipo\": \"NEGOCIO\",\n  \"correlacionNegocio\": \"radicado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) { const m = pm.response.json(); pm.collectionVariables.set(\"mensajeId\", m.id); pm.collectionVariables.set(\"versionMensaje\", m.version); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3 - Agregar campo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes/{{mensajeId}}/campos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"radicado\",\n  \"tipoDato\": \"TEXTO\",\n  \"orden\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4 - Consultar campos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes/{{mensajeId}}/campos"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5 - Actualizar mensaje",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes/{{mensajeId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nodoId\": \"{{nodoEnvioId}}\",\n  \"sentido\": \"ENVIO\",\n  \"nombre\": \"Solicitud actualizada\",\n  \"origenExterno\": false,\n  \"correlacionTipo\": \"NEGOCIO\",\n  \"correlacionNegocio\": \"radicado\",\n  \"version\": \"{{versionMensaje}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"versionMensaje\", pm.response.json().version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6 - Declarar recepción",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nodoId\": \"{{nodoRecepcionId}}\",\n  \"sentido\": \"RECEPCION\",\n  \"nombre\": \"Solicitud actualizada\",\n  \"origenExterno\": false,\n  \"correlacionTipo\": \"NEGOCIO\",\n  \"correlacionNegocio\": \"radicado\",\n  \"politicaSinCorrespondencia\": \"DESCARTAR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"mensajeRecepcionId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7 - Agregar campo de recepción",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes/{{mensajeRecepcionId}}/campos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"radicado\",\n  \"tipoDato\": \"TEXTO\",\n  \"orden\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8 - Conectar pools",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/flujos-mensaje",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"poolOrigenId\": \"{{poolOrigenId}}\",\n  \"poolDestinoId\": \"{{poolDestinoId}}\",\n  \"nodoOrigenId\": \"{{nodoEnvioId}}\",\n  \"nodoDestinoId\": \"{{nodoRecepcionId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9 - Consultar advertencias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes/advertencias"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 - Asociar datos recibidos a actividad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/mensajes/{{mensajeRecepcionId}}/usos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actividadId\": \"{{actividadId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 - Permitir crear pools al editor (administrador)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/permisos-estructura",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rolAcceso\": \"EDITOR\",\n  \"recurso\": \"POOL\",\n  \"accion\": \"CREAR\",\n  \"permitido\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 - Consultar permiso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/procesos/{{procesoId}}/permisos-estructura/verificar?recurso=POOL&accion=CREAR"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

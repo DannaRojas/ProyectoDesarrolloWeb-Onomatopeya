@@ -54,7 +54,9 @@ public class ContextoColaboracionService {
     }
 
     public Nodo nodo(Long id, Long procesoId) {
-        Nodo nodo = nodos.findById(id).orElseThrow(() -> new EntityNotFoundException("Nodo no encontrado."));
+        // Al cargar una relación lazy, necesitamos recuperar el subtipo real del nodo.
+        Nodo nodo = org.hibernate.Hibernate.unproxy(
+                nodos.findById(id).orElseThrow(() -> new EntityNotFoundException("Nodo no encontrado.")), Nodo.class);
         if (!Objects.equals(nodo.getProceso().getId(), procesoId)
                 || !Objects.equals(nodo.getPool().getProceso().getId(), procesoId)
                 || nodo.getEstado() == EstadoNodo.RETIRADO

@@ -199,6 +199,7 @@ class MensajeriaServiceTest {
         mensajes.crear(admin.getId(), proceso.getId(), datos);
         campos.crear(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
         flujos.crear(admin.getId(), proceso.getId(), conexion(origen, destino, envio, recepcion));
+        em.flush(); em.clear();
         assertThat(validacion.advertencias(admin.getId(), proceso.getId()))
                 .anyMatch(a -> a.contains("nombre")).anyMatch(a -> a.contains("campos")).anyMatch(a -> a.contains("correlación"));
     }

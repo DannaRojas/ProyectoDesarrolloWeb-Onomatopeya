@@ -73,7 +73,7 @@ public class MensajeService {
     }
 
     private void aplicar(Mensaje mensaje, MensajeRequestDto datos) {
-        Nodo nodo = mensaje.getNodo();
+        Nodo nodo = org.hibernate.Hibernate.unproxy(mensaje.getNodo(), Nodo.class);
         if (nodo instanceof Actividad actividad) {
             if (actividad.getTipo() != TipoActividad.ENVIO || datos.getSentido() != SentidoMensaje.ENVIO)
                 throw new IllegalArgumentException("Solo una actividad de envío puede declarar un mensaje saliente.");
