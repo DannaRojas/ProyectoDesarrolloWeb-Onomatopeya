@@ -14,6 +14,6 @@ public interface FlujoMensajeRepository extends JpaRepository<FlujoMensaje, Long
     @Query("select f from FlujoMensaje f where f.id = :id and f.proceso.id = :procesoId and f.activo = true")
     Optional<FlujoMensaje> buscarActivo(@Param("id") Long id, @Param("procesoId") Long procesoId);
 
-    @Query("select f from FlujoMensaje f where f.activo = true and (f.nodoOrigen.id = :nodoId or f.nodoDestino.id = :nodoId)")
+    @Query("select f from FlujoMensaje f left join f.nodoOrigen o left join f.nodoDestino d where f.activo = true and (o.id = :nodoId or d.id = :nodoId)")
     List<FlujoMensaje> buscarConectados(@Param("nodoId") Long nodoId);
 }

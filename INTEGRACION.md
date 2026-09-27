@@ -36,3 +36,11 @@ Escucha en `http://127.0.0.1:8081`. La conexión necesita el esquema completo de
 `GET /empresas`, `GET /empresas/{id}` y `PUT /empresas/{id}` llaman a las consultas y actualización del servicio existente. El PUT recibe solamente los tres campos de empresa. Los listados mantienen el comportamiento actual del servicio, incluidas las empresas inactivas.
 
 Esta conexión es local y todavía no incluye login, permisos multiempresa ni pantallas Thymeleaf. No debe exponerse a una red hasta integrar autenticación. Las pruebas HTTP verifican registro, hash, relaciones, consultas, actualización, validación, duplicados y ausencia de eliminación; no acreditan ejecución contra PostgreSQL.
+
+## Mensajes y permisos: alcance de las pruebas
+
+El módulo nuevo agrega Mensaje, CampoMensaje, FlujoMensaje, UsoMensajeActividad y PermisoEstructura, con DTOs, servicios y repositorios JPQL. Representa la comunicación en el diagrama; no envía correos ni ejecuta procesos.
+
+Las pruebas de servicios necesitan que los eventos puedan guardarse en la tabla compartida de nodos. El modelo anterior exige `lane_id` y `tipo_actividad` para todas las filas, aunque esos campos solo corresponden a Actividad. Por eso las pruebas aplican `src/test/resources/esquema-nodos-mensajeria.sql` únicamente a H2. No se ha corregido el modelo de Camila ni modificado PostgreSQL.
+
+`docs/propuesta-esquema-nodos.sql` contiene el ajuste propuesto para revisión de Camila y Laura. Las pruebas verdes del módulo dependen de ese ajuste: no significan que el esquema original permita persistir eventos. Antes de integrar deben acordar también cómo mantener esa restricción al regenerar el esquema desde JPA.
