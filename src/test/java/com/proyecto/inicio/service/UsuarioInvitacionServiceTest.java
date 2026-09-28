@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.*;
 @Transactional
 class UsuarioInvitacionServiceTest {
     @Autowired UsuarioInvitacionService servicio;
-    @Autowired UsuarioConsultaService consultas;
+    @Autowired UsuarioService consultas;
     @Autowired EmpresaRepository empresas;
     @Autowired UsuarioRepository usuarios;
     @Autowired EntityManager em;

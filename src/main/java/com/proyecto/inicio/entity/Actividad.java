@@ -9,10 +9,10 @@ import lombok.*;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class Actividad extends Nodo {
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_actividad", length = 20, nullable = false)
+    @Column(name = "tipo_actividad", length = 20)
     private TipoActividad tipo;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "lane_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lane_id")
     private Lane lane;
 }

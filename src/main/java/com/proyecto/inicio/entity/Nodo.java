@@ -6,6 +6,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "nodo")
+@org.hibernate.annotations.Check(constraints = "tipo_nodo <> 'ACTIVIDAD' OR (lane_id IS NOT NULL AND tipo_actividad IS NOT NULL)")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "tipo_nodo", discriminatorType = DiscriminatorType.STRING, length = 20)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor

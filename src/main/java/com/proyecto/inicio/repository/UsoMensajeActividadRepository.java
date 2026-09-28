@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UsoMensajeActividadRepository extends JpaRepository<UsoMensajeActividad, Long> {
+    @Query("select u from UsoMensajeActividad u where u.actividad.id = :actividadId and u.activo = true")
+    List<UsoMensajeActividad> buscarPorActividad(@Param("actividadId") Long actividadId);
     @Query("select u from UsoMensajeActividad u where u.mensaje.id = :mensajeId and u.activo = true order by u.id")
     List<UsoMensajeActividad> listarActivos(@Param("mensajeId") Long mensajeId);
 

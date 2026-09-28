@@ -73,7 +73,7 @@ public class EmpresaService {
 
     @Transactional(readOnly = true)
     public List<EmpresaResponseDto> consultarTodas() {
-        return empresaRepository.findAll()
+        return empresaRepository.buscarPorEstado(true)
                 .stream()
                 .map(this::mapearRespuesta)
                 .toList();

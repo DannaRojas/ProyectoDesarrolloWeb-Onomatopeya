@@ -21,7 +21,8 @@ import org.springframework.validation.method.ParameterErrors;
 import java.util.LinkedHashMap;
 
 @RestControllerAdvice(assignableTypes = {EmpresaController.class, MensajeController.class,
-        FlujoMensajeController.class, PermisoEstructuraController.class, UsuarioController.class})
+        FlujoMensajeController.class, PermisoEstructuraController.class, UsuarioController.class,
+        ProcesoController.class, RolProcesoController.class, DiagramaController.class})
 @Profile("conexion-empresa")
 public class ErroresApi {
     @ExceptionHandler(MethodArgumentNotValidException.class)

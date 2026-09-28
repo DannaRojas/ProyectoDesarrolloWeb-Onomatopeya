@@ -25,18 +25,30 @@ class DatosInicialesTest {
     @Autowired PoolRepository pools;
     @Autowired RolProcesoRepository roles;
     @Autowired LaneRepository lanes;
+    @Autowired NodoRepository nodos;
+    @Autowired ArcoRepository arcos;
+    @Autowired MensajeRepository mensajes;
+    @Autowired CampoMensajeRepository campos;
+    @Autowired FlujoMensajeRepository flujos;
+    @Autowired com.proyecto.inicio.service.DiagramaService diagramas;
 
     @Test
     void preparaDosEmpresasConUsuariosYProcesosSeparados() {
         assertThat(empresas.count()).isEqualTo(2);
         assertThat(usuarios.count()).isEqualTo(6);
         assertThat(procesos.count()).isEqualTo(2);
-        assertThat(pools.count()).isEqualTo(2);
+        assertThat(pools.count()).isEqualTo(4);
         assertThat(roles.count()).isEqualTo(2);
         assertThat(lanes.count()).isEqualTo(2);
+        assertThat(nodos.count()).isEqualTo(14);
+        assertThat(arcos.count()).isEqualTo(14);
+        assertThat(mensajes.count()).isEqualTo(4);
+        assertThat(campos.count()).isEqualTo(4);
+        assertThat(flujos.count()).isEqualTo(4);
         procesos.findAll().forEach(proceso -> {
             assertThat(proceso.getEstadoPublicacion()).isEqualTo(EstadoPublicacion.BORRADOR);
             assertThat(proceso.getCreador().getEmpresa().getId()).isEqualTo(proceso.getEmpresa().getId());
+            assertThat(diagramas.consultar(proceso.getCreador().getId(), proceso.getId()).advertencias()).isEmpty();
         });
         lanes.findAll().forEach(lane -> assertThat(lane.getRolProceso().getEmpresa().getId())
                 .isEqualTo(lane.getPool().getProceso().getEmpresa().getId()));
@@ -51,9 +63,12 @@ class DatosInicialesTest {
         assertThat(empresas.count()).isEqualTo(2);
         assertThat(usuarios.count()).isEqualTo(6);
         assertThat(procesos.count()).isEqualTo(2);
-        assertThat(pools.count()).isEqualTo(2);
+        assertThat(pools.count()).isEqualTo(4);
         assertThat(roles.count()).isEqualTo(2);
         assertThat(lanes.count()).isEqualTo(2);
+        assertThat(nodos.count()).isEqualTo(14);
+        assertThat(arcos.count()).isEqualTo(14);
+        assertThat(mensajes.count()).isEqualTo(4);
         assertThat(editor.getNombre()).isEqualTo("Nombre editado en la prueba");
         assertThat(editor.getPasswordHash()).isEqualTo(hash);
     }

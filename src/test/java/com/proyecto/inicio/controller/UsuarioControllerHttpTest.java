@@ -22,7 +22,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ActiveProfiles("conexion-empresa")
@@ -81,5 +81,43 @@ class UsuarioControllerHttpTest {
                         .content(json.writeValueAsString(Map.of("token", "a".repeat(43), "contrasena", "ClaveDePrueba123!"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("La invitación no es válida o ya venció."));
+    }
+
+    @Test
+    void administradorConsultaInvitaCambiaRolYDesactivaPorHttp() throws Exception {
+        Empresa empresa = empresas.save(Empresa.builder().nombre("Empresa de gestión")
+                .nit(UUID.randomUUID().toString()).correoContacto("gestion@example.com").activo(true).build());
+        Usuario admin = usuarios.saveAndFlush(Usuario.builder().empresa(empresa).nombre("Admin")
+                .correo(UUID.randomUUID() + "@example.com").estado(EstadoUsuario.ACTIVO)
+                .rolAcceso(RolAcceso.ADMINISTRADOR).build());
+        java.security.Principal principal = admin::getCorreo;
+        String correo = UUID.randomUUID() + "@example.com";
+        mvc.perform(post("/usuarios/invitaciones").principal(principal).contentType("application/json")
+                        .content(json.writeValueAsString(Map.of("nombre", "Invitado", "correo", correo, "rolAcceso", "LECTURA"))))
+                .andExpect(status().isCreated());
+        Usuario invitado = usuarios.findByCorreo(correo).orElseThrow();
+        mvc.perform(get("/usuarios").principal(principal)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+        mvc.perform(get("/usuarios/" + invitado.getId()).principal(principal))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.empresaId").value(empresa.getId()));
+        mvc.perform(patch("/usuarios/" + invitado.getId() + "/rol").principal(principal)
+                        .contentType("application/json").content(json.writeValueAsString(
+                                Map.of("rolAcceso", "EDITOR", "version", invitado.getVersion()))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.rolAcceso").value("EDITOR"));
+        mvc.perform(post("/usuarios/" + invitado.getId() + "/desactivar").principal(principal)
+                        .contentType("application/json").content(json.writeValueAsString(
+                                Map.of("confirmar", true, "version", invitado.getVersion()))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("INACTIVO"));
+    }
+
+    @Test
+    void gestionRequiereSesionYValidaLosDtos() throws Exception {
+        mvc.perform(get("/usuarios")).andExpect(status().isUnauthorized());
+        mvc.perform(patch("/usuarios/1/rol").contentType("application/json")
+                        .content("{\"rolAcceso\":\"EDITOR\",\"version\":0}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/usuarios/1/desactivar").contentType("application/json")
+                        .content("{\"confirmar\":false,\"version\":0}"))
+                .andExpect(status().isBadRequest());
     }
 }

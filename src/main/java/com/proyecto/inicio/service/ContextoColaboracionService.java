@@ -31,12 +31,17 @@ public class ContextoColaboracionService {
 
     // Todas las operaciones del módulo pasan por el mismo control de empresa y rol.
     public Proceso proceso(Long usuarioId, Long procesoId, boolean escritura, boolean soloAdministrador) {
+        return proceso(usuarioId, procesoId, escritura, soloAdministrador, false);
+    }
+
+    public Proceso proceso(Long usuarioId, Long procesoId, boolean escritura, boolean soloAdministrador, boolean incluirInactivo) {
         Usuario usuario = usuario(usuarioId);
         Proceso proceso = procesos.findById(procesoId)
-                .filter(p -> Boolean.TRUE.equals(p.getActivo()) && Boolean.TRUE.equals(p.getEmpresa().getActivo()))
+                .filter(p -> (Boolean.TRUE.equals(p.getActivo()) || incluirInactivo && !escritura)
+                        && Boolean.TRUE.equals(p.getEmpresa().getActivo()))
                 .orElseThrow(() -> new EntityNotFoundException("Proceso no encontrado."));
         boolean propietario = Objects.equals(usuario.getEmpresa().getId(), proceso.getEmpresa().getId());
-        boolean compartido = !escritura && !soloAdministrador && accesos
+        boolean compartido = Boolean.TRUE.equals(proceso.getActivo()) && !escritura && !soloAdministrador && accesos
                 .findByProcesoIdAndEmpresaInvitadaIdAndActivoTrue(procesoId, usuario.getEmpresa().getId()).isPresent();
         if (!propietario && !compartido) throw new AccesoColaboracionException();
         if (escritura && usuario.getRolAcceso() != RolAcceso.ADMINISTRADOR && usuario.getRolAcceso() != RolAcceso.EDITOR)
