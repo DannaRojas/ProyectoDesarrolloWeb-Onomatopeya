@@ -1,6 +1,7 @@
 package com.proyecto.inicio.service;
 
 import com.proyecto.inicio.dto.request.InvitarUsuarioRequestDto;
+import com.proyecto.inicio.dto.UsuarioDto.AceptarInvitacion;
 import com.proyecto.inicio.entity.Empresa;
 import com.proyecto.inicio.entity.Usuario;
 import com.proyecto.inicio.entity.enums.EstadoUsuario;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -40,6 +42,7 @@ class UsuarioInvitacionServiceTest {
     @Autowired EmpresaRepository empresas;
     @Autowired UsuarioRepository usuarios;
     @Autowired EntityManager em;
+    @Autowired PasswordEncoder codificador;
     Empresa empresa;
     Usuario admin;
 
@@ -187,6 +190,59 @@ class UsuarioInvitacionServiceTest {
         assertThat(InvitarUsuarioRequestDto.class.getDeclaredFields())
                 .extracting(java.lang.reflect.Field::getName)
                 .containsExactlyInAnyOrder("nombre", "correo", "rolAcceso");
+    }
+
+    @Test
+    void aceptaInvitacionConHashSinCambiarEmpresaNiRol() {
+        var invitacion = servicio.invitar(admin.getId(), datos("aceptar@example.com", RolAcceso.EDITOR));
+        var respuesta = servicio.aceptar(new AceptarInvitacion(invitacion.getTokenInvitacion(), "ClaveDePrueba123!"));
+        em.clear();
+        Usuario guardado = usuarios.findById(respuesta.getId()).orElseThrow();
+        assertThat(guardado.getEstado()).isEqualTo(EstadoUsuario.ACTIVO);
+        assertThat(guardado.getEmpresa().getId()).isEqualTo(empresa.getId());
+        assertThat(guardado.getRolAcceso()).isEqualTo(RolAcceso.EDITOR);
+        assertThat(guardado.getInvitadoPor().getId()).isEqualTo(admin.getId());
+        assertThat(codificador.matches("ClaveDePrueba123!", guardado.getPasswordHash())).isTrue();
+        assertThat(guardado.getTokenInvitacionHash()).isNull();
+        assertThat(guardado.getInvitacionExpiraEn()).isNull();
+        assertThat(respuesta.getEstado()).isEqualTo(EstadoUsuario.ACTIVO);
+    }
+
+    @Test
+    void tokenAceptadoNoPuedeReutilizarse() {
+        var invitacion = servicio.invitar(admin.getId(), datos("reuso@example.com", RolAcceso.LECTURA));
+        var datos = new AceptarInvitacion(invitacion.getTokenInvitacion(), "ClaveDePrueba123!");
+        servicio.aceptar(datos);
+        String hash = usuarios.findById(invitacion.getUsuario().getId()).orElseThrow().getPasswordHash();
+        assertThatThrownBy(() -> servicio.aceptar(datos)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(usuarios.findById(invitacion.getUsuario().getId()).orElseThrow().getPasswordHash()).isEqualTo(hash);
+    }
+
+    @Test
+    void invitacionVencidaOEmpresaInactivaNoActivaUsuario() {
+        var invitacion = servicio.invitar(admin.getId(), datos("vencida@example.com", RolAcceso.EDITOR));
+        Usuario invitado = usuarios.findById(invitacion.getUsuario().getId()).orElseThrow();
+        var datos = new AceptarInvitacion(invitacion.getTokenInvitacion(), "ClaveDePrueba123!");
+        invitado.setInvitacionExpiraEn(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1));
+        em.flush();
+        assertThatThrownBy(() -> servicio.aceptar(datos)).isInstanceOf(IllegalArgumentException.class);
+        invitado.setInvitacionExpiraEn(OffsetDateTime.now(ZoneOffset.UTC).plusHours(1));
+        empresa.setActivo(false);
+        em.flush();
+        assertThatThrownBy(() -> servicio.aceptar(datos)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(invitado.getEstado()).isEqualTo(EstadoUsuario.INVITADO);
+        assertThat(invitado.getPasswordHash()).isNull();
+    }
+
+    @Test
+    void tokenDesconocidoYDatosInvalidosSeRechazan() {
+        assertThatThrownBy(() -> servicio.aceptar(new AceptarInvitacion("a".repeat(43), "ClaveDePrueba123!")))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> servicio.aceptar(null)).isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> servicio.aceptar(new AceptarInvitacion("incorrecto", "corta")))
+                .isInstanceOf(ConstraintViolationException.class);
+        assertThat(new AceptarInvitacion("token-secreto", "clave-secreta").toString())
+                .doesNotContain("token-secreto", "clave-secreta");
     }
 
     private InvitarUsuarioRequestDto datos(String correo, RolAcceso rol) {

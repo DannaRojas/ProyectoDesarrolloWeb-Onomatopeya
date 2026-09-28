@@ -9,6 +9,9 @@ import java.util.Optional;
 
 // Consultas de integración, sin cambiar el repositorio que preparó Laura.
 public interface UsuarioConsultaRepository extends JpaRepository<Usuario, Long> {
+    @Query("select u from Usuario u join fetch u.empresa where u.tokenInvitacionHash = :hash")
+    Optional<Usuario> buscarPorInvitacion(@Param("hash") String hash);
+
     @Query("select u from Usuario u join fetch u.empresa where u.id = :usuarioId")
     Optional<Usuario> buscarConEmpresa(@Param("usuarioId") Long usuarioId);
 

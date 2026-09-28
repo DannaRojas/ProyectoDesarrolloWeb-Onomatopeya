@@ -1,6 +1,7 @@
 package com.proyecto.inicio.service;
 
 import com.proyecto.inicio.dto.request.InvitarUsuarioRequestDto;
+import com.proyecto.inicio.dto.UsuarioDto.AceptarInvitacion;
 import com.proyecto.inicio.dto.response.InvitacionUsuarioResponseDto;
 import com.proyecto.inicio.dto.response.UsuarioResponseDto;
 import com.proyecto.inicio.entity.Usuario;
@@ -13,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -35,6 +37,7 @@ import java.util.Locale;
 public class UsuarioInvitacionService {
     private final UsuarioConsultaRepository usuarios;
     private final ModelMapper modelMapper;
+    private final PasswordEncoder codificador;
     private final SecureRandom aleatorio = new SecureRandom();
 
     // administradorId debe venir del contexto autenticado, no del cuerpo de una petición.
@@ -69,6 +72,23 @@ public class UsuarioInvitacionService {
         // Aquí se prepara la invitación; todavía no se envía correo ni se activa la cuenta.
         return new InvitacionUsuarioResponseDto(modelMapper.map(invitado, UsuarioResponseDto.class),
                 token, invitado.getInvitacionExpiraEn());
+    }
+
+    public UsuarioResponseDto aceptar(@NotNull @Valid AceptarInvitacion datos) {
+        Usuario invitado = usuarios.buscarPorInvitacion(hash(datos.token()))
+                .filter(u -> u.getEstado() == EstadoUsuario.INVITADO)
+                .filter(u -> Boolean.TRUE.equals(u.getEmpresa().getActivo()))
+                .filter(u -> u.getInvitacionExpiraEn() != null
+                        && u.getInvitacionExpiraEn().isAfter(OffsetDateTime.now(ZoneOffset.UTC)))
+                .orElseThrow(() -> new IllegalArgumentException("La invitación no es válida o ya venció."));
+
+        invitado.setPasswordHash(codificador.encode(datos.contrasena()));
+        invitado.setEstado(EstadoUsuario.ACTIVO);
+        // Una invitación aceptada no puede utilizarse otra vez.
+        invitado.setTokenInvitacionHash(null);
+        invitado.setInvitacionExpiraEn(null);
+        usuarios.saveAndFlush(invitado);
+        return modelMapper.map(invitado, UsuarioResponseDto.class);
     }
 
     private String hash(String token) {
