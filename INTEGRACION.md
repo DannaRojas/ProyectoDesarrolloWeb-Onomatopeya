@@ -41,6 +41,10 @@ Escucha en `http://127.0.0.1:8081`. La conexión necesita el esquema completo de
 
 Esta conexión es local y todavía no incluye login ni permisos multiempresa para Empresa. No debe exponerse a una red hasta integrar autenticación. Las pruebas HTTP verifican registro, hash, relaciones, consultas, actualización, validación, duplicados y ausencia de eliminación; no acreditan ejecución contra PostgreSQL.
 
+## Revisión de PostgreSQL del 27/09/2026
+
+La conexión con la base de Laura se comprobó en modo solo lectura. El esquema tiene ocho tablas; el arranque integrado se detiene porque falta `arco`. La propuesta de las siete tablas faltantes y los ajustes de Empresa está en [docs/migraciones/REVISION-POSTGRESQL.md](docs/migraciones/REVISION-POSTGRESQL.md). No se aplicó ninguna migración. El SQL propuesto termina en ROLLBACK y requiere revisión y prueba en una copia aislada.
+
 ## Pantallas básicas de Empresa
 
 La vista está en `/vista/empresas`. La API JSON sigue en `/empresas`; no se cambiaron sus rutas.
