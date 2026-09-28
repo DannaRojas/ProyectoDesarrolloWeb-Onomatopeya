@@ -1,6 +1,6 @@
 # Integración por partes
 
-Esta rama parte de `8ddb5ad`. Los archivos que ya estaban en esa versión se conservan sin cambios.
+Esta rama parte de `8ddb5ad`. Las clases existentes del equipo se conservan sin cambios. La configuración Maven se consolidó en el `pom.xml` principal.
 
 ## Primera conexión: Empresa
 
@@ -9,15 +9,17 @@ Los archivos de `integracion/empresa` reciben y validan peticiones, calculan el 
 Pruebas en una base H2 temporal, sin conectarse a la máquina de Laura:
 
 ```powershell
-.\mvnw.cmd -f pom-integracion.xml test
+.\mvnw.cmd test
 ```
 
-El archivo Maven auxiliar permite agregar dependencias y configurar Lombok sin cambiar el `pom.xml` del equipo. Hay que indicar `-f pom-integracion.xml` al compilar esta rama. No se debe ejecutar el proyecto con el POM original mientras esta integración dependa de las nuevas librerías.
+El `pom.xml` reúne JPA, Web MVC, Thymeleaf, Validation, PostgreSQL, Lombok, ModelMapper y las dependencias de pruebas. Security Crypto se usa solo para el hash de contraseñas; no agrega un login. H2 permanece limitado a pruebas. Se retiró `pom-integracion.xml` para evitar dos configuraciones diferentes.
+
+ModelMapper se declara como bean en `config/ModelMapperConfig.java`, para inyectarlo en los servicios. Se fija la versión 3.2.4 de la guía oficial; la estructura bean + Service es la misma del ejemplo del curso. No se cambian las versiones de Spring Boot ni Java.
 
 Para PostgreSQL, primero debe estar activo el túnel universitario y el túnel SSH. Configurar `DB_URL`, `DB_USERNAME` y `DB_PASSWORD` como variables de entorno, sin guardarlas en Git. El perfil verifica las tablas existentes con `ddl-auto=validate`; no crea ni actualiza el esquema compartido.
 
 ```powershell
-.\mvnw.cmd -f pom-integracion.xml spring-boot:run '-Dspring-boot.run.profiles=conexion-empresa'
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=conexion-empresa'
 ```
 
 Escucha en `http://127.0.0.1:8081`. La conexión necesita el esquema completo del modelo actual; si falta una tabla, el arranque se detiene para coordinar la migración con Laura.

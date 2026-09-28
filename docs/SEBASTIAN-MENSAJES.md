@@ -88,10 +88,10 @@ Para correlación por campo: primero crear el mensaje sin correlación, luego cr
 Desde la raíz de esta copia:
 
 ```powershell
-.\mvnw.cmd -f pom-integracion.xml test
+.\mvnw.cmd test
 ```
 
-El POM auxiliar contiene las dependencias necesarias y configura Lombok, sin modificar el POM del equipo.
+El `pom.xml` principal contiene las dependencias necesarias y configura Lombok. El POM auxiliar se retiró al consolidar la configuración.
 Los tests usan H2 en memoria, no PostgreSQL de Laura.
 MensajeriaServiceTest prueba persistencia, JPQL, permisos, correlación y retiradas.
 MensajeriaHttpTest recorre controladores, validación, servicios y persistencia con MockMvc.
@@ -120,4 +120,4 @@ La colección incluye ejemplos y comprobaciones, pero no se ejecutó contra Post
 7. **Auditoría completa.** Se registran actor, proceso, acción y descripción. Las instantáneas antes/después y la visualización del historial siguen pendientes.
 8. **Validación de entrega.** No marcar todas las historias como terminadas por tener estas clases. Faltan integración, pruebas en PostgreSQL y revisión de los criterios completos con el profesor.
 
-No se modificaron archivos presentes en el commit base. Tampoco se cambió la copia original con trabajo local pendiente. Los commits se hicieron en esta rama; no se hizo push.
+Las clases presentes en el commit base se conservan. El `pom.xml` principal sí se actualizó para consolidar dependencias. No se cambió la copia original con trabajo local pendiente. Los commits se hicieron en esta rama; no se hizo push.
