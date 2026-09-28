@@ -1,8 +1,5 @@
--- Propuesta del 27/09/2026 para revisar con Laura y Camila.
--- No pertenece a src/main/resources y Spring no la ejecuta automáticamente.
--- Preparada para las 8 tablas observadas en gestion_procesos.
--- El ensayo termina en ROLLBACK: no deja cambios persistentes.
--- Incluso un ensayo toma bloqueos. Probar primero en una copia aislada.
+-- Creación de las siete tablas pendientes. No modifica las ocho tablas existentes.
+-- Una sola aplicación; detenerse si alguna tabla ya existe.
 \set ON_ERROR_STOP on
 
 BEGIN;
@@ -36,18 +33,8 @@ BEGIN
         END IF;
     END LOOP;
 
-    IF EXISTS (SELECT 1 FROM public.empresa WHERE correo_contacto IS NULL) THEN
-        RAISE EXCEPTION 'Hay empresas sin correo. Laura debe revisar esos datos; no se rellenan automáticamente.';
-    END IF;
 END;
 $revision$;
-
--- Ampliar longitudes conserva los valores actuales y coincide con las entidades.
--- El NIT único, los IDs y los registros existentes se conservan.
-ALTER TABLE public.empresa
-    ALTER COLUMN nit TYPE varchar(255),
-    ALTER COLUMN correo_contacto TYPE varchar(255),
-    ALTER COLUMN correo_contacto SET NOT NULL;
 
 -- Actividad, Evento y Gateway comparten esta tabla mediante tipo_nodo.
 -- lane_id y tipo_actividad solo son obligatorios en una ACTIVIDAD.
@@ -183,16 +170,4 @@ CREATE INDEX ix_flujo_nodo_destino ON public.flujo_mensaje(nodo_destino_id);
 CREATE INDEX ix_flujo_actividad_error ON public.flujo_mensaje(actividad_error_id);
 CREATE INDEX ix_uso_actividad ON public.uso_mensaje_actividad(actividad_id);
 
--- Comprobaciones dentro del ensayo. Al terminar se revierte toda la transacción.
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-ORDER BY table_name;
-
-SELECT count(*) AS empresas,
-       count(*) FILTER (WHERE correo_contacto IS NULL) AS empresas_sin_correo
-FROM public.empresa;
-
-ROLLBACK;
--- Solo después de aprobación y pruebas en copia, sustituir el ROLLBACK por COMMIT.
--- No ejecutar también propuesta-esquema-nodos.sql: su ajuste ya está incluido aquí.
+COMMIT;

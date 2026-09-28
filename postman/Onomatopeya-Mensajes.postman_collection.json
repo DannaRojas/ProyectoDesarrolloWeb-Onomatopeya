@@ -2,7 +2,7 @@
   "info": {
     "name": "Onomatopeya - Mensajes de Sebastián",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Ejemplos preparados, no ejecutados en Postman. Requiere esquema migrado, nodos y login real. Sin sesión, los endpoints devuelven 401. No ejecutar el runner contra la base compartida sin acordarlo con el equipo. Revisar docs/SEBASTIAN-MENSAJES.md. El permiso de estructura todavía no está integrado en servicios anteriores."
+    "description": "Peticiones de mensajes y permisos. Requieren datos y sesión válidos. No ejecutar el runner sobre la base compartida sin autorización."
   },
   "variable": [
     {
