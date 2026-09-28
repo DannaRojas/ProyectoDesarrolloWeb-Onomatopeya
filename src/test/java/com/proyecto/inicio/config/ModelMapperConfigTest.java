@@ -1,6 +1,9 @@
 package com.proyecto.inicio.config;
 
 import com.proyecto.inicio.dto.request.*;
+import com.proyecto.inicio.dto.MensajeDto.*;
+import com.proyecto.inicio.dto.FlujoMensajeDto.*;
+import com.proyecto.inicio.dto.PermisoEstructuraDto.*;
 import com.proyecto.inicio.dto.response.*;
 import com.proyecto.inicio.entity.*;
 import com.proyecto.inicio.entity.enums.*;
@@ -16,7 +19,7 @@ class ModelMapperConfigTest {
 
     @BeforeAll
     static void configurar() {
-        mapper = new ModelMapperConfig().modelMapper();
+        mapper = new Configuracion().modelMapper();
     }
 
     @Test

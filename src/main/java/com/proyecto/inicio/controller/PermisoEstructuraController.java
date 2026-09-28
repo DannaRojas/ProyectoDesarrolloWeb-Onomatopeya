@@ -1,7 +1,7 @@
-package com.proyecto.inicio.controller.mensajeria;
+package com.proyecto.inicio.controller;
 
-import com.proyecto.inicio.dto.request.PermisoEstructuraRequestDto;
-import com.proyecto.inicio.dto.response.PermisoEstructuraResponseDto;
+import com.proyecto.inicio.dto.PermisoEstructuraDto.PermisoEstructuraRequestDto;
+import com.proyecto.inicio.dto.PermisoEstructuraDto.PermisoEstructuraResponseDto;
 import com.proyecto.inicio.entity.enums.AccionEstructura;
 import com.proyecto.inicio.entity.enums.RecursoEstructura;
 import com.proyecto.inicio.service.PermisoEstructuraService;
@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
+import com.proyecto.inicio.service.UsuarioSesionService;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PermisoEstructuraController {
     private final PermisoEstructuraService servicio;
-    private final UsuarioSesionColaboracion sesion;
+    private final UsuarioSesionService sesion;
 
     @PutMapping
     public PermisoEstructuraResponseDto guardar(Principal principal, @PathVariable @Positive Long procesoId,

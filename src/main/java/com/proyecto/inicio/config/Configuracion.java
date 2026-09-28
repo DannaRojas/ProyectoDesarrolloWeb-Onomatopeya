@@ -1,15 +1,21 @@
 package com.proyecto.inicio.config;
 
 import com.proyecto.inicio.dto.request.*;
+import com.proyecto.inicio.dto.MensajeDto.*;
+import com.proyecto.inicio.dto.FlujoMensajeDto.*;
+import com.proyecto.inicio.dto.PermisoEstructuraDto.*;
 import com.proyecto.inicio.dto.response.*;
 import com.proyecto.inicio.entity.*;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
 
 @Configuration
-public class ModelMapperConfig {
+public class Configuracion {
     @Bean
     public ModelMapper modelMapper() {
         ModelMapper mapper = new ModelMapper();
@@ -92,5 +98,11 @@ public class ModelMapperConfig {
         });
         mapper.createTypeMap(PermisoEstructura.class, PermisoEstructuraResponseDto.class).addMappings(m ->
                 m.map(origen -> origen.getProceso().getId(), PermisoEstructuraResponseDto::setProcesoId));
+    }
+
+    @Bean
+    @Profile("conexion-empresa")
+    public PasswordEncoder codificadorConexionEmpresa() {
+        return Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     }
 }

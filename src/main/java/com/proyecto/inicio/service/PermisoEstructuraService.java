@@ -1,7 +1,7 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.dto.request.PermisoEstructuraRequestDto;
-import com.proyecto.inicio.dto.response.PermisoEstructuraResponseDto;
+import com.proyecto.inicio.dto.PermisoEstructuraDto.PermisoEstructuraRequestDto;
+import com.proyecto.inicio.dto.PermisoEstructuraDto.PermisoEstructuraResponseDto;
 import com.proyecto.inicio.entity.*;
 import com.proyecto.inicio.entity.enums.*;
 import com.proyecto.inicio.exception.AccesoColaboracionException;

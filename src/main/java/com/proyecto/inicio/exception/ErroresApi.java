@@ -1,4 +1,7 @@
-package com.proyecto.inicio.controller.mensajeria;
+package com.proyecto.inicio.exception;
+
+import com.proyecto.inicio.controller.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.proyecto.inicio.exception.AccesoColaboracionException;
 import jakarta.persistence.EntityNotFoundException;
@@ -17,9 +20,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.validation.method.ParameterErrors;
 import java.util.LinkedHashMap;
 
-@RestControllerAdvice(basePackageClasses = MensajeController.class)
+@RestControllerAdvice(assignableTypes = {EmpresaController.class, MensajeController.class,
+        FlujoMensajeController.class, PermisoEstructuraController.class})
 @Profile("conexion-empresa")
-public class ErroresMensajeria {
+public class ErroresApi {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail validacion(MethodArgumentNotValidException excepcion) {
         var respuesta = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Revisa los campos indicados.");
@@ -51,13 +55,21 @@ public class ErroresMensajeria {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail reglaInvalida(IllegalArgumentException excepcion) {
+    public ProblemDetail reglaInvalida(IllegalArgumentException excepcion, HttpServletRequest peticion) {
+        if (peticion.getRequestURI().startsWith("/empresas")) {
+            boolean duplicado = "Ya existe una empresa registrada con ese NIT".equals(excepcion.getMessage())
+                    || "Ya existe un usuario registrado con ese correo".equals(excepcion.getMessage());
+            return ProblemDetail.forStatusAndDetail(duplicado ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST,
+                    duplicado ? "El NIT o el correo del administrador ya está registrado." : "Los datos no son válidos.");
+        }
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, excepcion.getMessage());
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ProblemDetail noEncontrado() {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "No se encontró el registro en este proceso.");
+    public ProblemDetail noEncontrado(HttpServletRequest peticion) {
+        String detalle = peticion.getRequestURI().startsWith("/empresas")
+                ? "Empresa no encontrada." : "No se encontró el registro en este proceso.";
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, detalle);
     }
 
     @ExceptionHandler(AccesoColaboracionException.class)

@@ -1,4 +1,4 @@
-package com.proyecto.inicio.controller.mensajeria;
+package com.proyecto.inicio.service;
 
 import com.proyecto.inicio.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +9,7 @@ import java.security.Principal;
 
 @Component
 @RequiredArgsConstructor
-public class UsuarioSesionColaboracion {
+public class UsuarioSesionService {
     private final UsuarioRepository usuarios;
 
     public Long id(Principal principal) {

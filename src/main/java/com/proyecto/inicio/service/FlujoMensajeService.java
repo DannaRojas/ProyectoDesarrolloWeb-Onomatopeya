@@ -1,7 +1,7 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.dto.request.FlujoMensajeRequestDto;
-import com.proyecto.inicio.dto.response.FlujoMensajeResponseDto;
+import com.proyecto.inicio.dto.FlujoMensajeDto.FlujoMensajeRequestDto;
+import com.proyecto.inicio.dto.FlujoMensajeDto.FlujoMensajeResponseDto;
 import com.proyecto.inicio.entity.*;
 import com.proyecto.inicio.entity.enums.*;
 import com.proyecto.inicio.repository.*;

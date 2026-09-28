@@ -1,4 +1,6 @@
-package com.proyecto.inicio.integracion.empresa;
+package com.proyecto.inicio.service;
+
+import com.proyecto.inicio.dto.RegistroEmpresaDto;
 
 import com.proyecto.inicio.dto.response.EmpresaResponseDto;
 import com.proyecto.inicio.service.EmpresaService;
@@ -8,16 +10,16 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Profile("conexion-empresa")
-public class ConexionEmpresaService {
+public class RegistroEmpresaService {
     private final EmpresaService empresaService;
     private final PasswordEncoder codificador;
 
-    public ConexionEmpresaService(EmpresaService empresaService, PasswordEncoder codificador) {
+    public RegistroEmpresaService(EmpresaService empresaService, PasswordEncoder codificador) {
         this.empresaService = empresaService;
         this.codificador = codificador;
     }
 
-    public EmpresaResponseDto registrar(RegistroEmpresaConexion registro) {
+    public EmpresaResponseDto registrar(RegistroEmpresaDto registro) {
         var admin = registro.administrador();
         // El servicio existente recibe el hash y guarda ambos registros en su transacción.
         return empresaService.crearEmpresaConAdminInicial(

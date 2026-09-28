@@ -1,4 +1,4 @@
-package com.proyecto.inicio.integracion.empresa;
+package com.proyecto.inicio.controller;
 
 import com.proyecto.inicio.entity.enums.EstadoUsuario;
 import com.proyecto.inicio.entity.enums.RolAcceso;
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.hbm2ddl.halt_on_error=true"
 })
-class ConexionEmpresaHttpTest {
+class EmpresaControllerHttpTest {
     @LocalServerPort private int puerto;
     @Autowired private EmpresaRepository empresas;
     @Autowired private UsuarioRepository usuarios;

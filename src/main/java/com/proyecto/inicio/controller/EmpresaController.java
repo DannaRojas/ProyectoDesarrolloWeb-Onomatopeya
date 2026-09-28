@@ -1,4 +1,8 @@
-package com.proyecto.inicio.integracion.empresa;
+package com.proyecto.inicio.controller;
+
+import com.proyecto.inicio.dto.RegistroEmpresaDto;
+import com.proyecto.inicio.dto.RegistroEmpresaDto.DatosEmpresa;
+import com.proyecto.inicio.service.RegistroEmpresaService;
 
 import com.proyecto.inicio.dto.response.EmpresaResponseDto;
 import com.proyecto.inicio.service.EmpresaService;
@@ -14,17 +18,17 @@ import java.util.List;
 @RestController
 @Profile("conexion-empresa")
 @RequestMapping("/empresas")
-public class ConexionEmpresaController {
+public class EmpresaController {
     private final EmpresaService empresaService;
-    private final ConexionEmpresaService conexion;
+    private final RegistroEmpresaService conexion;
 
-    public ConexionEmpresaController(EmpresaService empresaService, ConexionEmpresaService conexion) {
+    public EmpresaController(EmpresaService empresaService, RegistroEmpresaService conexion) {
         this.empresaService = empresaService;
         this.conexion = conexion;
     }
 
     @PostMapping
-    public ResponseEntity<EmpresaResponseDto> registrar(@Valid @RequestBody RegistroEmpresaConexion registro) {
+    public ResponseEntity<EmpresaResponseDto> registrar(@Valid @RequestBody RegistroEmpresaDto registro) {
         var empresa = conexion.registrar(registro);
         var ubicacion = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(empresa.getId()).toUri();
@@ -43,7 +47,7 @@ public class ConexionEmpresaController {
 
     @PutMapping("/{id}")
     public EmpresaResponseDto actualizar(@Positive @PathVariable Long id,
-                                         @Valid @RequestBody DatosEmpresaConexion datos) {
+                                         @Valid @RequestBody DatosEmpresa datos) {
         return empresaService.actualizar(id, datos.alDtoExistente());
     }
 }

@@ -1,7 +1,6 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.dto.request.MensajeRequestDto;
-import com.proyecto.inicio.dto.response.MensajeResponseDto;
+import com.proyecto.inicio.dto.MensajeDto.*;
 import com.proyecto.inicio.entity.*;
 import com.proyecto.inicio.entity.enums.*;
 import com.proyecto.inicio.repository.*;
@@ -14,8 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service @Validated @RequiredArgsConstructor
 @Transactional
@@ -117,4 +116,156 @@ public class MensajeService {
     private MensajeResponseDto respuesta(Mensaje m) {
         return modelMapper.map(m, MensajeResponseDto.class);
     }
+
+    public CampoMensajeResponseDto crearCampo(Long usuarioId, Long procesoId, Long mensajeId, @NotNull @Valid CampoMensajeRequestDto datos) {
+        Proceso proceso = contexto.proceso(usuarioId, procesoId, true, false);
+        Mensaje mensaje = buscar(mensajeId, procesoId);
+        CampoMensaje campo = new CampoMensaje();
+        campo.setMensaje(mensaje);
+        aplicar(campo, datos);
+        campos.saveAndFlush(campo);
+        contexto.auditar(usuarioId, proceso, "CAMPO_MENSAJE", campo.getId(), AccionHistorial.CREAR, "Se agregó el campo " + campo.getNombre());
+        return respuesta(campo);
+    }
+
+    public CampoMensajeResponseDto actualizarCampo(Long usuarioId, Long procesoId, Long mensajeId, Long id, @NotNull @Valid CampoMensajeRequestDto datos) {
+        Proceso proceso = contexto.proceso(usuarioId, procesoId, true, false);
+        Mensaje mensaje = buscar(mensajeId, procesoId);
+        CampoMensaje campo = buscarCampo(id, mensajeId);
+        contexto.version(datos.getVersion(), campo.getVersion());
+        if (mensaje.getCorrelacionCampo() != null && Objects.equals(mensaje.getCorrelacionCampo().getId(), id)
+                && (!campo.getNombre().equals(datos.getNombre().strip()) || campo.getTipoDato() != datos.getTipoDato()))
+            throw new IllegalStateException("Retira primero la selección de este campo como clave de correlación.");
+        aplicar(campo, datos);
+        campos.saveAndFlush(campo);
+        contexto.auditar(usuarioId, proceso, "CAMPO_MENSAJE", id, AccionHistorial.ACTUALIZAR, "Se actualizó el campo " + campo.getNombre());
+        return respuesta(campo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CampoMensajeResponseDto> listarCampos(Long usuarioId, Long procesoId, Long mensajeId) {
+        contexto.proceso(usuarioId, procesoId, false, false);
+        buscar(mensajeId, procesoId);
+        return campos.listarActivos(mensajeId).stream().map(this::respuesta).toList();
+    }
+
+    public void retirarCampo(Long usuarioId, Long procesoId, Long mensajeId, Long id, Long version, boolean confirmado) {
+        Proceso proceso = contexto.proceso(usuarioId, procesoId, true, true);
+        contexto.confirmar(confirmado);
+        Mensaje mensaje = buscar(mensajeId, procesoId);
+        CampoMensaje campo = buscarCampo(id, mensajeId);
+        contexto.version(version, campo.getVersion());
+        if (mensaje.getCorrelacionCampo() != null && Objects.equals(mensaje.getCorrelacionCampo().getId(), id))
+            throw new IllegalStateException("El campo todavía se usa como clave de correlación.");
+        campo.setActivo(false);
+        contexto.auditar(usuarioId, proceso, "CAMPO_MENSAJE", id, AccionHistorial.DESACTIVAR, "Se retiró el campo " + campo.getNombre());
+    }
+
+    private void aplicar(CampoMensaje campo, CampoMensajeRequestDto datos) {
+        if (campos.nombreOcupado(campo.getMensaje().getId(), datos.getNombre().strip(), campo.getId()))
+            throw new IllegalStateException("El nombre ya está reservado dentro del mensaje.");
+        modelMapper.map(datos, campo);
+        campo.setNombre(datos.getNombre().strip());
+    }
+
+    private CampoMensaje buscarCampo(Long id, Long mensajeId) {
+        return campos.buscarActivo(id, mensajeId).orElseThrow(() -> new EntityNotFoundException("Campo no encontrado."));
+    }
+
+    private CampoMensajeResponseDto respuesta(CampoMensaje c) {
+        return modelMapper.map(c, CampoMensajeResponseDto.class);
+    }
+
+    public UsoMensajeActividadResponseDto crearUso(Long usuarioId, Long procesoId, Long mensajeId, @NotNull @Valid UsoMensajeActividadRequestDto datos) {
+        Proceso proceso = contexto.proceso(usuarioId, procesoId, true, false);
+        Mensaje mensaje = buscar(mensajeId, procesoId);
+        Nodo nodo = contexto.nodo(datos.getActividadId(), procesoId);
+        if (mensaje.getSentido() != SentidoMensaje.RECEPCION || !(nodo instanceof Actividad)
+                || !Objects.equals(nodo.getPool().getId(), mensaje.getNodo().getPool().getId()))
+            throw new IllegalArgumentException("La actividad debe usar un mensaje recibido en su mismo pool.");
+        UsoMensajeActividad uso = usos.buscarRelacion(mensajeId, nodo.getId()).orElseGet(UsoMensajeActividad::new);
+        if (uso.getId() != null && Boolean.TRUE.equals(uso.getActivo()))
+            throw new IllegalStateException("La actividad ya está asociada al mensaje.");
+        uso.setMensaje(mensaje); uso.setActividad((Actividad) nodo); uso.setActivo(true);
+        usos.saveAndFlush(uso);
+        contexto.auditar(usuarioId, proceso, "USO_MENSAJE_ACTIVIDAD", uso.getId(), AccionHistorial.CREAR, "Se vinculó una actividad con los datos recibidos.");
+        return respuesta(uso);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UsoMensajeActividadResponseDto> listarUsos(Long usuarioId, Long procesoId, Long mensajeId) {
+        contexto.proceso(usuarioId, procesoId, false, false);
+        buscar(mensajeId, procesoId);
+        return usos.listarActivos(mensajeId).stream().map(this::respuesta).toList();
+    }
+
+    public void retirarUso(Long usuarioId, Long procesoId, Long mensajeId, Long id, Long version, boolean confirmado) {
+        Proceso proceso = contexto.proceso(usuarioId, procesoId, true, true);
+        contexto.confirmar(confirmado);
+        buscar(mensajeId, procesoId);
+        UsoMensajeActividad uso = usos.buscarActivo(id, mensajeId).orElseThrow(() -> new EntityNotFoundException("Uso no encontrado."));
+        contexto.version(version, uso.getVersion());
+        uso.setActivo(false);
+        contexto.auditar(usuarioId, proceso, "USO_MENSAJE_ACTIVIDAD", id, AccionHistorial.DESACTIVAR, "Se retiró la asociación entre actividad y mensaje.");
+    }
+
+    private UsoMensajeActividadResponseDto respuesta(UsoMensajeActividad u) {
+        return modelMapper.map(u, UsoMensajeActividadResponseDto.class);
+    }
+
+    // Un borrador puede guardarse incompleto. Las advertencias describen lo que falta.
+    @Transactional(readOnly = true)
+    public List<String> advertencias(Long usuarioId, Long procesoId) {
+        contexto.proceso(usuarioId, procesoId, false, false);
+        List<Mensaje> declaraciones = mensajes.listarActivosPorProceso(procesoId);
+        List<FlujoMensaje> conexiones = flujos.listarActivos(procesoId);
+        Map<Long, Mensaje> porNodo = declaraciones.stream().collect(Collectors.toMap(m -> m.getNodo().getId(), m -> m));
+        Set<String> avisos = new LinkedHashSet<>();
+        for (Mensaje m : declaraciones) {
+            if (m.getNodo().getEstado() == EstadoNodo.RETIRADO || !Boolean.TRUE.equals(m.getNodo().getPool().getActivo()))
+                avisos.add("Mensaje " + m.getId() + ": su nodo o pool fue retirado.");
+            if (org.hibernate.Hibernate.unproxy(m.getNodo()) instanceof Evento evento && evento.getTipo() == TipoEvento.INTERMEDIO
+                    && m.getSentido() == SentidoMensaje.RECEPCION && clave(m) == null)
+                avisos.add("Mensaje " + m.getId() + ": la recepción intermedia no tiene correlación.");
+            boolean conectado = conexiones.stream().anyMatch(f -> m.getSentido() == SentidoMensaje.ENVIO
+                    ? Objects.equals(id(f.getNodoOrigen()), m.getNodo().getId())
+                    : Objects.equals(id(f.getNodoDestino()), m.getNodo().getId()));
+            if (!conectado && (m.getSentido() == SentidoMensaje.ENVIO || !Boolean.TRUE.equals(m.getOrigenExterno())))
+                avisos.add("Mensaje " + m.getId() + ": falta conectar su " + (m.getSentido() == SentidoMensaje.ENVIO ? "receptor." : "emisor."));
+            for (Mensaje otro : declaraciones) {
+                // No se considera ambiguo el par esperado envío/recepción de una misma conexión.
+                if (m.getId() < otro.getId() && m.getSentido() == otro.getSentido()
+                        && m.getNombre().equals(otro.getNombre()) && clave(m) != null && Objects.equals(clave(m), clave(otro)))
+                    avisos.add("Mensajes " + m.getId() + " y " + otro.getId() + ": mismo nombre y correlación; revisa la ambigüedad.");
+            }
+        }
+        for (FlujoMensaje f : conexiones) {
+            Mensaje envio = porNodo.get(id(f.getNodoOrigen()));
+            Mensaje recepcion = porNodo.get(id(f.getNodoDestino()));
+            if (f.getNodoOrigen() != null && envio == null || f.getNodoDestino() != null && recepcion == null)
+                avisos.add("Flujo " + f.getId() + ": falta una declaración activa en sus extremos.");
+            if (envio != null && recepcion != null) {
+                if (!envio.getNombre().equals(recepcion.getNombre()))
+                    avisos.add("Flujo " + f.getId() + ": el nombre de envío y recepción no coincide.");
+                if (!contrato(envio).equals(contrato(recepcion)))
+                    avisos.add("Flujo " + f.getId() + ": los nombres o tipos de los campos no coinciden.");
+                if (clave(envio) == null || clave(recepcion) == null || !Objects.equals(clave(envio), clave(recepcion)))
+                    avisos.add("Flujo " + f.getId() + ": revisa la correlación entre envío y recepción.");
+            }
+        }
+        return new ArrayList<>(avisos);
+    }
+
+    private Map<String, TipoDatoMensaje> contrato(Mensaje m) {
+        return campos.listarActivos(m.getId()).stream().collect(Collectors.toMap(CampoMensaje::getNombre, CampoMensaje::getTipoDato));
+    }
+
+    private String clave(Mensaje m) {
+        if (m.getCorrelacionTipo() == TipoCorrelacion.NEGOCIO) return "NEGOCIO:" + m.getCorrelacionNegocio();
+        if (m.getCorrelacionTipo() == TipoCorrelacion.CAMPO && m.getCorrelacionCampo() != null)
+            return "CAMPO:" + m.getCorrelacionCampo().getNombre() + ":" + m.getCorrelacionCampo().getTipoDato();
+        return null;
+    }
+
+    private Long id(Nodo nodo) { return nodo == null ? null : nodo.getId(); }
 }

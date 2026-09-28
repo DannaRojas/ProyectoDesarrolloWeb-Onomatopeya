@@ -1,7 +1,10 @@
 package com.proyecto.inicio.service;
 
 import com.proyecto.inicio.dto.request.*;
-import com.proyecto.inicio.dto.response.MensajeResponseDto;
+import com.proyecto.inicio.dto.MensajeDto.*;
+import com.proyecto.inicio.dto.FlujoMensajeDto.*;
+import com.proyecto.inicio.dto.PermisoEstructuraDto.*;
+import com.proyecto.inicio.dto.MensajeDto.MensajeResponseDto;
 import com.proyecto.inicio.entity.*;
 import com.proyecto.inicio.entity.enums.*;
 import com.proyecto.inicio.exception.AccesoColaboracionException;
@@ -25,11 +28,8 @@ import static org.assertj.core.api.Assertions.*;
 class MensajeriaServiceTest {
     @Autowired EntityManager em;
     @Autowired MensajeService mensajes;
-    @Autowired CampoMensajeService campos;
     @Autowired FlujoMensajeService flujos;
-    @Autowired UsoMensajeActividadService usos;
     @Autowired PermisoEstructuraService permisos;
-    @Autowired ValidacionMensajesService validacion;
     @Autowired MensajeRepository mensajeRepository;
     @Autowired CampoMensajeRepository campoRepository;
     @Autowired FlujoMensajeRepository flujoRepository;
@@ -71,13 +71,13 @@ class MensajeriaServiceTest {
     void persisteContratoYFlujoConConsultasJPQLYAuditoria() {
         var salida = crear(envio, SentidoMensaje.ENVIO);
         var entrada = crear(recepcion, SentidoMensaje.RECEPCION);
-        campos.crear(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
-        campos.crear(admin.getId(), proceso.getId(), entrada.getId(), campo("radicado"));
+        mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
+        mensajes.crearCampo(admin.getId(), proceso.getId(), entrada.getId(), campo("radicado"));
         var flujo = flujos.crear(editor.getId(), proceso.getId(), conexion(origen, destino, envio, recepcion));
         em.flush(); em.clear();
         assertThat(mensajes.listar(admin.getId(), proceso.getId())).hasSize(2);
         assertThat(flujos.listar(admin.getId(), proceso.getId())).extracting("id").containsExactly(flujo.getId());
-        assertThat(validacion.advertencias(admin.getId(), proceso.getId())).isEmpty();
+        assertThat(mensajes.advertencias(admin.getId(), proceso.getId())).isEmpty();
         assertThat(historial.findByEmpresaContextoId(empresa.getId())).hasSize(5);
     }
 
@@ -119,24 +119,24 @@ class MensajeriaServiceTest {
     void correlacionExigeCampoPropioYProtegeSuRetirada() {
         var salida = crear(envio, SentidoMensaje.ENVIO);
         var entrada = crear(recepcion, SentidoMensaje.RECEPCION);
-        var campoAjeno = campos.crear(admin.getId(), proceso.getId(), entrada.getId(), campo("ajeno"));
+        var campoAjeno = mensajes.crearCampo(admin.getId(), proceso.getId(), entrada.getId(), campo("ajeno"));
         var datos = solicitud(envio, SentidoMensaje.ENVIO);
         datos.setVersion(salida.getVersion()); datos.setCorrelacionTipo(TipoCorrelacion.CAMPO);
         datos.setCorrelacionNegocio(null); datos.setCorrelacionCampoId(campoAjeno.getId());
         assertThatThrownBy(() -> mensajes.actualizar(admin.getId(), proceso.getId(), salida.getId(), datos))
                 .isInstanceOf(IllegalArgumentException.class);
-        var propio = campos.crear(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
+        var propio = mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
         datos.setCorrelacionCampoId(propio.getId());
         mensajes.actualizar(admin.getId(), proceso.getId(), salida.getId(), datos);
-        assertThatThrownBy(() -> campos.retirar(admin.getId(), proceso.getId(), salida.getId(), propio.getId(), propio.getVersion(), true))
+        assertThatThrownBy(() -> mensajes.retirarCampo(admin.getId(), proceso.getId(), salida.getId(), propio.getId(), propio.getVersion(), true))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void nombreDeCampoUnicoYVersionObsoletaSeRechazan() {
         var salida = crear(envio, SentidoMensaje.ENVIO);
-        campos.crear(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
-        assertThatThrownBy(() -> campos.crear(admin.getId(), proceso.getId(), salida.getId(), campo(" radicado ")))
+        mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
+        assertThatThrownBy(() -> mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo(" radicado ")))
                 .isInstanceOf(IllegalStateException.class);
         var datos = solicitud(envio, SentidoMensaje.ENVIO);
         datos.setVersion(salida.getVersion()); datos.setNombre("Renombrado");
@@ -148,7 +148,7 @@ class MensajeriaServiceTest {
     @Test
     void retirarMensajeConservaCamposYFlujosExternos() {
         var salida = crear(envio, SentidoMensaje.ENVIO);
-        var campo = campos.crear(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
+        var campo = mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
         Pool externo = pool(true);
         var solicitud = conexion(origen, externo, envio, null);
         solicitud.setTipoDestino(TipoDestinoExterno.CORREO); solicitud.setPoliticaFallo(PoliticaFallo.CONTINUAR);
@@ -166,13 +166,13 @@ class MensajeriaServiceTest {
     @Test
     void usoSoloAsociaActividadesDelPoolReceptorYPuedeReactivarse() {
         var entrada = crear(recepcion, SentidoMensaje.RECEPCION);
-        var uso = usos.crear(editor.getId(), proceso.getId(), entrada.getId(), new UsoMensajeActividadRequestDto(actividad.getId()));
-        usos.retirar(admin.getId(), proceso.getId(), entrada.getId(), uso.getId(), uso.getVersion(), true);
+        var uso = mensajes.crearUso(editor.getId(), proceso.getId(), entrada.getId(), new UsoMensajeActividadRequestDto(actividad.getId()));
+        mensajes.retirarUso(admin.getId(), proceso.getId(), entrada.getId(), uso.getId(), uso.getVersion(), true);
         em.flush();
-        assertThat(usos.crear(admin.getId(), proceso.getId(), entrada.getId(), new UsoMensajeActividadRequestDto(actividad.getId())).getId())
+        assertThat(mensajes.crearUso(admin.getId(), proceso.getId(), entrada.getId(), new UsoMensajeActividadRequestDto(actividad.getId())).getId())
                 .isEqualTo(uso.getId());
         var salida = crear(envio, SentidoMensaje.ENVIO);
-        assertThatThrownBy(() -> usos.crear(admin.getId(), proceso.getId(), salida.getId(), new UsoMensajeActividadRequestDto(actividad.getId())))
+        assertThatThrownBy(() -> mensajes.crearUso(admin.getId(), proceso.getId(), salida.getId(), new UsoMensajeActividadRequestDto(actividad.getId())))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -197,10 +197,10 @@ class MensajeriaServiceTest {
         var datos = solicitud(recepcion, SentidoMensaje.RECEPCION);
         datos.setNombre("Otro nombre"); datos.setCorrelacionTipo(null); datos.setCorrelacionNegocio(null);
         mensajes.crear(admin.getId(), proceso.getId(), datos);
-        campos.crear(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
+        mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
         flujos.crear(admin.getId(), proceso.getId(), conexion(origen, destino, envio, recepcion));
         em.flush(); em.clear();
-        assertThat(validacion.advertencias(admin.getId(), proceso.getId()))
+        assertThat(mensajes.advertencias(admin.getId(), proceso.getId()))
                 .anyMatch(a -> a.contains("nombre")).anyMatch(a -> a.contains("campos")).anyMatch(a -> a.contains("correlación"));
     }
 
