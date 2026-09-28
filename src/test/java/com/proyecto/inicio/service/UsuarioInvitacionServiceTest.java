@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -55,7 +56,8 @@ class UsuarioInvitacionServiceTest {
     void administradorPreparaInvitadoConEmpresaRolHashYVencimiento() throws Exception {
         var datos = datos("Persona@Example.com", RolAcceso.EDITOR);
         datos.setNombre("  Persona invitada  ");
-        OffsetDateTime antes = OffsetDateTime.now(ZoneOffset.UTC);
+        // Comparar con la misma precisión que el servicio y PostgreSQL.
+        OffsetDateTime antes = OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS);
         var respuesta = servicio.invitar(admin.getId(), datos);
         em.clear();
         Usuario guardado = usuarios.findById(respuesta.getUsuario().getId()).orElseThrow();
@@ -75,7 +77,7 @@ class UsuarioInvitacionServiceTest {
                 MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8))));
         assertThat(guardado.getTokenInvitacionHash()).isNotEqualTo(token);
         assertThat(respuesta.getExpiraEn()).isBetween(antes.plusHours(24),
-                OffsetDateTime.now(ZoneOffset.UTC).plusHours(24));
+                OffsetDateTime.now(ZoneOffset.UTC).plusHours(24).truncatedTo(ChronoUnit.MICROS));
         assertThat(guardado.getInvitacionExpiraEn().toInstant()).isEqualTo(respuesta.getExpiraEn().toInstant());
         assertThat(respuesta.getUsuario().getEmpresaId()).isEqualTo(empresa.getId());
         assertThat(consultas.listarPorEmpresa(empresa.getId())).hasSize(2);
