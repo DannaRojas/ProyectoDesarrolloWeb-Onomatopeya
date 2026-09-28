@@ -2,6 +2,8 @@
 
 Esta rama parte de `8ddb5ad`. Las clases existentes del equipo se conservan sin cambios. La configuración Maven se consolidó en el `pom.xml` principal.
 
+Alcance acordado: continuar únicamente con el backend de la entrega 1. La [rúbrica vigente](https://desarrolloweb.click/calificacion/#primera-entrega-aplicacion-backend-con-spring-boot-y-jpa) no pide interfaz gráfica. Las vistas de Empresa ya creadas se conservan como apoyo local, no como requisito de entrega. No se amplían pantallas ni se integra Spring Security en este paso.
+
 ## Primera conexión: Empresa
 
 Los archivos de `integracion/empresa` reciben y validan peticiones, calculan el hash del administrador y llaman al `EmpresaService` existente. La transacción de Laura guarda la empresa y su administrador. No se expone eliminación de empresas.
@@ -81,6 +83,8 @@ La vista conserva el comportamiento del servicio existente: lista todas las empr
 ## Consultas de Usuario
 
 La primera parte de Usuario (consultas internas por empresa, DTO, JPQL y ModelMapper) se describe en [docs/USUARIO-CONSULTA.md](docs/USUARIO-CONSULTA.md). No publica endpoints y no sustituye la autorización pendiente.
+
+La preparación de invitaciones por un administrador está en [docs/USUARIO-INVITACION.md](docs/USUARIO-INVITACION.md). Guarda el usuario INVITADO y el hash de su token; aún no envía correo ni acepta la invitación.
 
 ## Mensajes y permisos: alcance de las pruebas
 

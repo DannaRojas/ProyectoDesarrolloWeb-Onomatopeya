@@ -52,4 +52,4 @@ Para comprobar también los módulos previos:
 
 ## Siguiente parte
 
-Acordar e integrar el control de acceso antes de conectar el controller y sus vistas sencillas. Invitaciones, aceptación, cambios de rol/estado y traslado de empresa siguen pendientes y se implementarán por separado.
+Continuar únicamente con backend, sin más vistas ni login por ahora. Se agregó la preparación de invitaciones, descrita en [USUARIO-INVITACION.md](USUARIO-INVITACION.md). Aceptación, cambios de rol/estado y traslado de empresa siguen pendientes. Antes de exponer servicios a usuarios reales habrá que integrar el control de acceso y la autenticación.

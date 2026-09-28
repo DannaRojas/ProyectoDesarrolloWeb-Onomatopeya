@@ -23,6 +23,18 @@ public class ModelMapperConfig {
     }
 
     private void configurarEntradas(ModelMapper mapper) {
+        // La empresa, el estado y los datos de invitación se deciden en el servicio.
+        mapper.createTypeMap(InvitarUsuarioRequestDto.class, Usuario.class).addMappings(m -> {
+            m.skip(Usuario::setId);
+            m.skip(Usuario::setEmpresa);
+            m.skip(Usuario::setPasswordHash);
+            m.skip(Usuario::setEstado);
+            m.skip(Usuario::setFechaCreacion);
+            m.skip(Usuario::setInvitadoPor);
+            m.skip(Usuario::setTokenInvitacionHash);
+            m.skip(Usuario::setInvitacionExpiraEn);
+            m.skip(Usuario::setVersion);
+        });
         // Los IDs de relaciones se validan y buscan en Service, no se convierten en entidades nuevas.
         mapper.createTypeMap(MensajeRequestDto.class, Mensaje.class).addMappings(m -> {
             m.skip(Mensaje::setId);
