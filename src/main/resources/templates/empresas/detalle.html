@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Detalle de empresa</title>
+</head>
+<body>
+<header th:replace="~{fragmentos/navegacion :: navegacion}"></header>
+<main>
+    <h2>Detalle de empresa</h2>
+    <p th:if="${mensaje}" th:text="${mensaje}" role="status"></p>
+    <dl>
+        <dt>ID</dt><dd th:text="${empresa.id}"></dd>
+        <dt>Nombre</dt><dd th:text="${empresa.nombre}"></dd>
+        <dt>NIT</dt><dd th:text="${empresa.nit}"></dd>
+        <dt>Correo de contacto</dt><dd th:text="${empresa.correoContacto}"></dd>
+    </dl>
+    <a th:href="@{/vista/empresas/{id}/editar(id=${empresa.id})}">Editar empresa</a>
+    | <a th:href="@{/vista/empresas}">Volver al listado</a>
+</main>
+</body>
+</html>

@@ -130,7 +130,7 @@ La colección incluye ejemplos y comprobaciones, pero no se ejecutó contra Post
 3. **Login.** Conectar el usuario autenticado con los controladores. No exponer la integración local de Empresa en una red: sus endpoints anteriores todavía no tienen autorización.
 4. **Permisos de pools/lanes.** PermisoEstructuraService.exigir debe llamarse dentro de las operaciones de escritura de esa estructura (o desde una fachada transaccional autorizada). Los servicios de Danna/Camila siguen intactos y todavía no llaman a esta comprobación. Por tanto, HU-24 no está cerrada.
 5. **Publicación y edición del diagrama.** Invocar las advertencias al mostrar/publicar el proceso; coordinar retirada/cambio de nodos y pools con mensajes activos. Los servicios antiguos aún pueden cambiar esas relaciones sin pasar por las comprobaciones nuevas.
-6. **Pantallas.** No se agregaron vistas Thymeleaf ni el editor gráfico.
+6. **Pantallas.** Se agregó una interfaz Thymeleaf básica de Empresa, documentada en `INTEGRACION.md`. Siguen pendientes las vistas de usuarios, procesos y mensajes, y el editor gráfico.
 7. **Auditoría completa.** Se registran actor, proceso, acción y descripción. Las instantáneas antes/después y la visualización del historial siguen pendientes.
 8. **Validación de entrega.** No marcar todas las historias como terminadas por tener estas clases. Faltan integración, pruebas en PostgreSQL y revisión de los criterios completos con el profesor.
 

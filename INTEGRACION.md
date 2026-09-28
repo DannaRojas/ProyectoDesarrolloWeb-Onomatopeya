@@ -39,7 +39,40 @@ Escucha en `http://127.0.0.1:8081`. La conexión necesita el esquema completo de
 
 `GET /empresas`, `GET /empresas/{id}` y `PUT /empresas/{id}` llaman a las consultas y actualización del servicio existente. El PUT recibe solamente los tres campos de empresa. Los listados mantienen el comportamiento actual del servicio, incluidas las empresas inactivas.
 
-Esta conexión es local y todavía no incluye login, permisos multiempresa ni pantallas Thymeleaf. No debe exponerse a una red hasta integrar autenticación. Las pruebas HTTP verifican registro, hash, relaciones, consultas, actualización, validación, duplicados y ausencia de eliminación; no acreditan ejecución contra PostgreSQL.
+Esta conexión es local y todavía no incluye login ni permisos multiempresa para Empresa. No debe exponerse a una red hasta integrar autenticación. Las pruebas HTTP verifican registro, hash, relaciones, consultas, actualización, validación, duplicados y ausencia de eliminación; no acreditan ejecución contra PostgreSQL.
+
+## Pantallas básicas de Empresa
+
+La vista está en `/vista/empresas`. La API JSON sigue en `/empresas`; no se cambiaron sus rutas.
+
+- Listado y detalle de empresas.
+- Registro con administrador inicial y contraseña almacenada como hash.
+- Edición de nombre, NIT y correo de contacto.
+- Navegación compartida con `th:fragment` y `th:replace`.
+- Formularios con `th:object`, `th:field`, `@ModelAttribute`, `@Valid`, `BindingResult` y errores junto al campo.
+- Sin CSS, frameworks visuales, JavaScript ni botones de eliminación.
+
+`EmpresaVistaController` devuelve nombres de plantillas, no JSON. `EmpresaVistaService` convierte los datos con ModelMapper y delega al `EmpresaService` existente. No se modificaron las clases de Laura.
+
+Los formularios incluyen un token de sesión para rechazar envíos sin token o desde otra sesión. Es una protección local limitada a estas vistas; no implementa autenticación, autorización ni protege la API REST anterior. Cuando se integre Spring Security, se debe sustituir por su mecanismo CSRF. Los campos editables se restringen al enlazar el formulario. Las contraseñas no se vuelven a mostrar al devolver errores.
+
+### Vista previa sin túnel ni PostgreSQL
+
+Solo para probar Empresa con datos ficticios en H2; se pierden al detener la aplicación:
+
+```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.useTestClasspath=true' '-Dspring-boot.run.profiles=conexion-empresa,vista-prueba' '-Dspring-boot.run.arguments=--spring.config.additional-location=file:./src/test/resources/application-vista-prueba.properties'
+```
+
+Abrir `http://127.0.0.1:8082/vista/empresas`. Este perfil vive en `src/test/resources` y no se incluye en el JAR. No es el despliegue del proyecto ni reemplaza PostgreSQL. Detener con Ctrl+C.
+
+Para las vistas con PostgreSQL se mantiene el comando normal del perfil `conexion-empresa` y el puerto 8081. Primero deben revisar el esquema y usar datos autorizados.
+
+Verificación local: `mvnw.cmd verify` termina con 50 pruebas aprobadas, incluidas 13 de estas vistas. También se comprobó en el navegador el registro de una empresa ficticia y la edición de su nombre, con los mensajes de confirmación correspondientes. Esta comprobación usó H2 en memoria, no PostgreSQL.
+
+### Límites pendientes
+
+La vista conserva el comportamiento del servicio existente: lista todas las empresas, incluidas las inactivas, sin aislamiento por usuario. El DTO actual no muestra su estado. La edición todavía no solicita una versión para detectar cambios simultáneos. No usarla como panel multiempresa real hasta completar esas reglas y la autenticación.
 
 ## Mensajes y permisos: alcance de las pruebas
 

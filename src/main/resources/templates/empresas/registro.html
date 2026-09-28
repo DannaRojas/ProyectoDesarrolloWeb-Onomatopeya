@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registrar empresa</title>
+</head>
+<body>
+<header th:replace="~{fragmentos/navegacion :: navegacion}"></header>
+<main>
+    <h2>Registrar empresa</h2>
+    <p>Todos los campos son obligatorios.</p>
+    <form method="post" th:action="@{/vista/empresas}" th:object="${registro}">
+        <input type="hidden" name="_token" th:value="${tokenFormulario}">
+        <p th:each="error : ${#fields.globalErrors()}" th:text="${error}" role="alert"></p>
+        <fieldset>
+            <legend>Datos de la empresa</legend>
+            <div th:replace="~{fragmentos/campos-empresa :: campos}"></div>
+        </fieldset>
+        <fieldset>
+            <legend>Administrador inicial</legend>
+            <p>
+                <label for="nombreAdmin">Nombre</label><br>
+                <input id="nombreAdmin" th:field="*{nombreAdmin}" required maxlength="255" autocomplete="name">
+                <span th:errors="*{nombreAdmin}" role="alert"></span>
+            </p>
+            <p>
+                <label for="correoAdmin">Correo</label><br>
+                <input id="correoAdmin" th:field="*{correoAdmin}" type="email" required maxlength="255" autocomplete="email">
+                <span th:errors="*{correoAdmin}" role="alert"></span>
+            </p>
+            <p>
+                <label for="contrasenaAdmin">Contraseña (entre 8 y 128 caracteres)</label><br>
+                <input id="contrasenaAdmin" name="contrasenaAdmin" type="password" required minlength="8" maxlength="128" autocomplete="new-password">
+                <span th:errors="*{contrasenaAdmin}" role="alert"></span>
+            </p>
+        </fieldset>
+        <p><button type="submit">Guardar empresa</button> <a th:href="@{/vista/empresas}">Cancelar</a></p>
+    </form>
+</main>
+</body>
+</html>

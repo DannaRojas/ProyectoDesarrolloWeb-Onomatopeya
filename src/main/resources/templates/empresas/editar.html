@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Editar empresa</title>
+</head>
+<body>
+<header th:replace="~{fragmentos/navegacion :: navegacion}"></header>
+<main>
+    <h2>Editar empresa</h2>
+    <p>Todos los campos son obligatorios.</p>
+    <form method="post" th:action="@{/vista/empresas/{id}/editar(id=${empresaId})}" th:object="${formulario}">
+        <input type="hidden" name="_token" th:value="${tokenFormulario}">
+        <p th:each="error : ${#fields.globalErrors()}" th:text="${error}" role="alert"></p>
+        <div th:replace="~{fragmentos/campos-empresa :: campos}"></div>
+        <p>
+            <button type="submit">Guardar cambios</button>
+            <a th:href="@{/vista/empresas/{id}(id=${empresaId})}">Cancelar</a>
+        </p>
+    </form>
+</main>
+</body>
+</html>

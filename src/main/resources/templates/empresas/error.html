@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>No se pudo completar la solicitud</title>
+</head>
+<body>
+<header th:replace="~{fragmentos/navegacion :: navegacion}"></header>
+<main>
+    <h2>No se pudo completar la solicitud</h2>
+    <p th:text="${mensajeError}" role="alert"></p>
+    <a th:href="@{/vista/empresas}">Volver al listado</a>
+</main>
+</body>
+</html>
