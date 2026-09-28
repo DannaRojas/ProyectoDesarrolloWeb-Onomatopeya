@@ -9,6 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -22,6 +23,7 @@ public class FlujoMensajeService {
     private final FlujoMensajeRepository flujos;
     private final MensajeRepository mensajes;
     private final ContextoColaboracionService contexto;
+    private final ModelMapper modelMapper;
 
     public FlujoMensajeResponseDto crear(Long usuarioId, Long procesoId, @NotNull @Valid FlujoMensajeRequestDto datos) {
         Proceso proceso = contexto.proceso(usuarioId, procesoId, true, false);
@@ -94,9 +96,9 @@ public class FlujoMensajeService {
                     && Objects.equals(id(existente.getNodoDestino()), d.getNodoDestinoId()))
                 throw new IllegalStateException("Ya existe este flujo de mensaje.");
         }
+        modelMapper.map(d, flujo);
         flujo.setPoolOrigen(origen); flujo.setPoolDestino(destino);
         flujo.setNodoOrigen(envio); flujo.setNodoDestino(recepcion);
-        flujo.setTipoDestino(d.getTipoDestino()); flujo.setPoliticaFallo(d.getPoliticaFallo());
         flujo.setActividadError(error);
     }
 
@@ -122,8 +124,6 @@ public class FlujoMensajeService {
     private Long id(Nodo nodo) { return nodo == null ? null : nodo.getId(); }
 
     private FlujoMensajeResponseDto respuesta(FlujoMensaje f) {
-        return new FlujoMensajeResponseDto(f.getId(), f.getProceso().getId(), f.getPoolOrigen().getId(),
-                f.getPoolDestino().getId(), id(f.getNodoOrigen()), id(f.getNodoDestino()),
-                f.getTipoDestino(), f.getPoliticaFallo(), id(f.getActividadError()), f.getActivo(), f.getVersion());
+        return modelMapper.map(f, FlujoMensajeResponseDto.class);
     }
 }

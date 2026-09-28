@@ -9,6 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -22,6 +23,7 @@ public class CampoMensajeService {
     private final CampoMensajeRepository campos;
     private final MensajeService mensajes;
     private final ContextoColaboracionService contexto;
+    private final ModelMapper modelMapper;
 
     public CampoMensajeResponseDto crear(Long usuarioId, Long procesoId, Long mensajeId, @NotNull @Valid CampoMensajeRequestDto datos) {
         Proceso proceso = contexto.proceso(usuarioId, procesoId, true, false);
@@ -70,9 +72,8 @@ public class CampoMensajeService {
     private void aplicar(CampoMensaje campo, CampoMensajeRequestDto datos) {
         if (campos.nombreOcupado(campo.getMensaje().getId(), datos.getNombre().strip(), campo.getId()))
             throw new IllegalStateException("El nombre ya está reservado dentro del mensaje.");
+        modelMapper.map(datos, campo);
         campo.setNombre(datos.getNombre().strip());
-        campo.setTipoDato(datos.getTipoDato());
-        campo.setOrden(datos.getOrden());
     }
 
     private CampoMensaje buscar(Long id, Long mensajeId) {
@@ -80,6 +81,6 @@ public class CampoMensajeService {
     }
 
     private CampoMensajeResponseDto respuesta(CampoMensaje c) {
-        return new CampoMensajeResponseDto(c.getId(), c.getMensaje().getId(), c.getNombre(), c.getTipoDato(), c.getOrden(), c.getActivo(), c.getVersion());
+        return modelMapper.map(c, CampoMensajeResponseDto.class);
     }
 }

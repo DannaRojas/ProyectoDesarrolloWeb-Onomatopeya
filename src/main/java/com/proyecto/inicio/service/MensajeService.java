@@ -9,6 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -24,6 +25,7 @@ public class MensajeService {
     private final FlujoMensajeRepository flujos;
     private final UsoMensajeActividadRepository usos;
     private final ContextoColaboracionService contexto;
+    private final ModelMapper modelMapper;
 
     public MensajeResponseDto crear(Long usuarioId, Long procesoId, @NotNull @Valid MensajeRequestDto datos) {
         Proceso proceso = contexto.proceso(usuarioId, procesoId, true, false);
@@ -103,12 +105,9 @@ public class MensajeService {
                 throw new IllegalArgumentException("Indica el identificador de negocio.");
         } else if (datos.getCorrelacionNegocio() != null && !datos.getCorrelacionNegocio().isBlank())
             throw new IllegalArgumentException("El identificador corresponde a una correlación de negocio.");
+        modelMapper.map(datos, mensaje);
         mensaje.setNombre(datos.getNombre().strip());
-        mensaje.setSentido(datos.getSentido());
-        mensaje.setOrigenExterno(datos.getOrigenExterno());
-        mensaje.setCorrelacionTipo(datos.getCorrelacionTipo());
         mensaje.setCorrelacionNegocio(datos.getCorrelacionTipo() == TipoCorrelacion.NEGOCIO ? datos.getCorrelacionNegocio().strip() : null);
-        mensaje.setPoliticaSinCorrespondencia(datos.getPoliticaSinCorrespondencia());
     }
 
     Mensaje buscar(Long id, Long procesoId) {
@@ -116,9 +115,6 @@ public class MensajeService {
     }
 
     private MensajeResponseDto respuesta(Mensaje m) {
-        return new MensajeResponseDto(m.getId(), m.getNodo().getId(), m.getSentido(), m.getNombre(),
-                m.getOrigenExterno(), m.getCorrelacionTipo(), m.getCorrelacionNegocio(),
-                m.getCorrelacionCampo() == null ? null : m.getCorrelacionCampo().getId(),
-                m.getPoliticaSinCorrespondencia(), m.getActivo(), m.getVersion());
+        return modelMapper.map(m, MensajeResponseDto.class);
     }
 }

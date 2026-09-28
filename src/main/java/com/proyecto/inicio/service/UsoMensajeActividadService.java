@@ -9,6 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -22,6 +23,7 @@ public class UsoMensajeActividadService {
     private final UsoMensajeActividadRepository usos;
     private final MensajeService mensajes;
     private final ContextoColaboracionService contexto;
+    private final ModelMapper modelMapper;
 
     public UsoMensajeActividadResponseDto crear(Long usuarioId, Long procesoId, Long mensajeId, @NotNull @Valid UsoMensajeActividadRequestDto datos) {
         Proceso proceso = contexto.proceso(usuarioId, procesoId, true, false);
@@ -57,6 +59,6 @@ public class UsoMensajeActividadService {
     }
 
     private UsoMensajeActividadResponseDto respuesta(UsoMensajeActividad u) {
-        return new UsoMensajeActividadResponseDto(u.getId(), u.getMensaje().getId(), u.getActividad().getId(), u.getActivo(), u.getVersion());
+        return modelMapper.map(u, UsoMensajeActividadResponseDto.class);
     }
 }

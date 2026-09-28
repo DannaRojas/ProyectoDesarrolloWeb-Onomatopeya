@@ -16,6 +16,8 @@ El `pom.xml` reúne JPA, Web MVC, Thymeleaf, Validation, PostgreSQL, Lombok, Mod
 
 ModelMapper se declara como bean en `config/ModelMapperConfig.java`, para inyectarlo en los servicios. Se fija la versión 3.2.4 de la guía oficial; la estructura bean + Service es la misma del ejemplo del curso. No se cambian las versiones de Spring Boot ni Java.
 
+Los cinco servicios nuevos de mensajes/permisos usan ese bean. Las entradas excluyen IDs, versiones y relaciones del mapeo automático; el servicio sigue validando y resolviendo las claves foráneas. El detalle y los límites de la integración están en `docs/SEBASTIAN-MENSAJES.md`.
+
 Para PostgreSQL, primero debe estar activo el túnel universitario y el túnel SSH. Configurar `DB_URL`, `DB_USERNAME` y `DB_PASSWORD` como variables de entorno, sin guardarlas en Git. El perfil verifica las tablas existentes con `ddl-auto=validate`; no crea ni actualiza el esquema compartido.
 
 ```powershell

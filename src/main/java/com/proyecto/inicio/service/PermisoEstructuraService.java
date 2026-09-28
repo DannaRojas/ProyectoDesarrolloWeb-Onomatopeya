@@ -9,6 +9,7 @@ import com.proyecto.inicio.repository.PermisoEstructuraRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -21,6 +22,7 @@ import java.util.Objects;
 public class PermisoEstructuraService {
     private final PermisoEstructuraRepository permisos;
     private final ContextoColaboracionService contexto;
+    private final ModelMapper modelMapper;
 
     public PermisoEstructuraResponseDto guardar(Long usuarioId, Long procesoId, @NotNull @Valid PermisoEstructuraRequestDto datos) {
         Proceso proceso = contexto.proceso(usuarioId, procesoId, true, true);
@@ -31,8 +33,8 @@ public class PermisoEstructuraService {
         PermisoEstructura permiso = permisos.buscarRegla(procesoId, datos.getRolAcceso(), datos.getRecurso(), datos.getAccion())
                 .orElseGet(PermisoEstructura::new);
         if (permiso.getId() != null) contexto.version(datos.getVersion(), permiso.getVersion());
-        permiso.setProceso(proceso); permiso.setRolAcceso(datos.getRolAcceso());
-        permiso.setRecurso(datos.getRecurso()); permiso.setAccion(datos.getAccion()); permiso.setPermitido(datos.getPermitido());
+        modelMapper.map(datos, permiso);
+        permiso.setProceso(proceso);
         permisos.saveAndFlush(permiso);
         contexto.auditar(usuarioId, proceso, "PERMISO_ESTRUCTURA", permiso.getId(), AccionHistorial.ACTUALIZAR,
                 "Se configuró " + datos.getAccion() + " sobre " + datos.getRecurso() + " para " + datos.getRolAcceso());
@@ -64,7 +66,6 @@ public class PermisoEstructuraService {
     }
 
     private PermisoEstructuraResponseDto respuesta(PermisoEstructura p) {
-        return new PermisoEstructuraResponseDto(p.getId(), p.getProceso().getId(), p.getRolAcceso(), p.getRecurso(),
-                p.getAccion(), p.getPermitido(), p.getVersion());
+        return modelMapper.map(p, PermisoEstructuraResponseDto.class);
     }
 }

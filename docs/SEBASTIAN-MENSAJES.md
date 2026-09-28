@@ -8,7 +8,19 @@ Fecha de revisión: 27 de septiembre de 2026.
 Se mantiene la estructura de clase: Controller → Service → Repository → base de datos.
 Los DTO de entrada y salida se usan en los límites; las entidades representan las tablas.
 La lógica y las transacciones están en Service. Los repositorios nuevos extienden JpaRepository y sus consultas personalizadas usan JPQL con parámetros nombrados. Mensaje incluye también una consulta nombrada con @NamedQuery.
-La conversión entre DTO y entidad es explícita en los servicios, sin añadir otro framework.
+La conversión entre DTO y entidad usa ModelMapper, inyectado en los servicios desde el bean de `config/ModelMapperConfig.java`. Las validaciones y la búsqueda de relaciones siguen en Service.
+
+### Cómo usamos ModelMapper
+
+- `modelMapper.map(datos, entidad)` copia los campos editables sobre la entidad existente. No reemplaza su ID, versión, estado activo ni relaciones.
+- `modelMapper.map(entidad, RespuestaDto.class)` construye las respuestas de los cinco servicios de mensajes/permisos.
+- La configuración declara cómo convertir relaciones como `mensaje.nodo.id` en `nodoId`.
+- El servicio comprueba primero empresa, rol, versión y reglas del dominio; busca las relaciones por ID y las asigna después de validarlas.
+- La conversión de entrada se usa en Mensaje, CampoMensaje, FlujoMensaje y PermisoEstructura. UsoMensajeActividad recibe únicamente una FK: su servicio busca y valida la actividad, y usa ModelMapper para la respuesta.
+- Se permite copiar nulos en los campos opcionales editables para que un PUT pueda limpiar una política o una correlación. No se activa globalmente la opción de ignorar nulos.
+- Los servicios anteriores de Empresa, Proceso, Pool, Lane y nodos no se modificaron.
+
+Seguimos el patrón de [DTO y configuración del curso](https://desarrolloweb.click/contenido/backend/desarrollo/dto/) y sus [servicios](https://desarrolloweb.click/contenido/backend/desarrollo/servicios/). La versión 3.2.4 proviene de la [guía oficial de ModelMapper](https://modelmapper.org/getting-started/); se usan [mapeos explícitos y exclusiones](https://modelmapper.org/user-manual/property-mapping/) para proteger las relaciones.
 
 | Clase | Responsabilidad | Relaciones principales |
 | --- | --- | --- |
@@ -98,7 +110,9 @@ MensajeriaHttpTest recorre controladores, validación, servicios y persistencia 
 ConexionEmpresaHttpTest usa peticiones HTTP reales contra un servidor local de prueba.
 Las sesiones de MensajeriaHttpTest son simuladas mediante Principal: no acreditan que ya exista un login funcional.
 
-Resultado del 27 de septiembre: 28 pruebas, 0 fallos, 0 errores y 0 omitidas (5 existentes, 5 de conexión de Empresa, 10 de servicios y 8 de endpoints de mensajes). Se ejecutaron con Java 23 y destino de compilación Java 17. La prueba del módulo depende del ajuste de nodos en H2 descrito abajo.
+Verificación previa a ModelMapper, del 27 de septiembre: 28 pruebas aprobadas (5 existentes, 5 de conexión de Empresa, 10 de servicios y 8 de endpoints de mensajes). Se agregaron 9 pruebas de ModelMapper que revisan las respuestas, relaciones opcionales, conservación de IDs/versiones/estados y limpieza de campos opcionales. Las pruebas se ejecutan con Java 23 y destino de compilación Java 17. La prueba del módulo depende del ajuste de nodos en H2 descrito abajo.
+
+Verificación posterior: `mvnw.cmd clean verify` terminó correctamente con 37 pruebas, 0 fallos, 0 errores y 0 omitidas, y generó `target/inicio-0.0.1-SNAPSHOT.jar`. Esto comprueba compilación, pruebas y empaquetado; no constituye una prueba de despliegue ni una conexión a PostgreSQL.
 
 ## Postman
 
