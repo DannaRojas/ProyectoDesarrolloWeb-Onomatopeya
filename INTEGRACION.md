@@ -78,6 +78,10 @@ Verificación local: `mvnw.cmd verify` termina con 50 pruebas aprobadas, incluid
 
 La vista conserva el comportamiento del servicio existente: lista todas las empresas, incluidas las inactivas, sin aislamiento por usuario. El DTO actual no muestra su estado. La edición todavía no solicita una versión para detectar cambios simultáneos. No usarla como panel multiempresa real hasta completar esas reglas y la autenticación.
 
+## Consultas de Usuario
+
+La primera parte de Usuario (consultas internas por empresa, DTO, JPQL y ModelMapper) se describe en [docs/USUARIO-CONSULTA.md](docs/USUARIO-CONSULTA.md). No publica endpoints y no sustituye la autorización pendiente.
+
 ## Mensajes y permisos: alcance de las pruebas
 
 El módulo nuevo agrega Mensaje, CampoMensaje, FlujoMensaje, UsoMensajeActividad y PermisoEstructura, con DTOs, servicios y repositorios JPQL. Representa la comunicación en el diagrama; no envía correos ni ejecuta procesos.

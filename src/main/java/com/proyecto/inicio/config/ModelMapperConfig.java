@@ -58,6 +58,8 @@ public class ModelMapperConfig {
 
     private void configurarRespuestas(ModelMapper mapper) {
         // Las respuestas muestran el ID de la relación, no el objeto JPA completo.
+        mapper.createTypeMap(Usuario.class, UsuarioResponseDto.class).addMappings(m ->
+                m.map(origen -> origen.getEmpresa().getId(), UsuarioResponseDto::setEmpresaId));
         mapper.createTypeMap(Mensaje.class, MensajeResponseDto.class).addMappings(m -> {
             m.map(origen -> origen.getNodo().getId(), MensajeResponseDto::setNodoId);
             m.map(origen -> origen.getCorrelacionCampo().getId(), MensajeResponseDto::setCorrelacionCampoId);
