@@ -46,8 +46,7 @@ public class EmpresaController {
     }
 
     @PutMapping("/{id}")
-    public EmpresaResponseDto actualizar(@Positive @PathVariable Long id,
-                                         @Valid @RequestBody DatosEmpresa datos) {
+    public EmpresaResponseDto actualizar(@Positive @PathVariable Long id, @Valid @RequestBody DatosEmpresa datos) {
         return empresaService.actualizar(id, datos.alDtoExistente());
     }
 }
