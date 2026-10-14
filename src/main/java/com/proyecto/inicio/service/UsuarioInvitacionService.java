@@ -1,18 +1,21 @@
 package com.proyecto.inicio.service;
 
+import com.proyecto.inicio.dto.request.AceptarInvitacion;
 import com.proyecto.inicio.dto.request.InvitarUsuarioRequestDto;
-import com.proyecto.inicio.dto.UsuarioDto.AceptarInvitacion;
 import com.proyecto.inicio.dto.response.InvitacionUsuarioResponseDto;
 import com.proyecto.inicio.dto.response.UsuarioResponseDto;
 import com.proyecto.inicio.entity.Usuario;
 import com.proyecto.inicio.entity.enums.EstadoUsuario;
 import com.proyecto.inicio.entity.enums.RolAcceso;
 import com.proyecto.inicio.exception.AccesoColaboracionException;
-import com.proyecto.inicio.repository.UsuarioConsultaRepository;
+import com.proyecto.inicio.repository.UsuarioRepository;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+
 import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,19 +38,23 @@ import java.util.Locale;
 @Transactional
 @RequiredArgsConstructor
 public class UsuarioInvitacionService {
-    private final UsuarioConsultaRepository usuarios;
+    private final UsuarioRepository usuarios;
     private final ModelMapper modelMapper;
     private final PasswordEncoder codificador;
     private final SecureRandom aleatorio = new SecureRandom();
 
     // administradorId debe venir del contexto autenticado, no del cuerpo de una petición.
-    public InvitacionUsuarioResponseDto invitar(@NotNull @Positive Long administradorId,
-            @NotNull @Valid InvitarUsuarioRequestDto datos) {
-        Usuario administrador = usuarios.buscarConEmpresa(administradorId)
-                .filter(u -> u.getEstado() == EstadoUsuario.ACTIVO)
-                .filter(u -> u.getRolAcceso() == RolAcceso.ADMINISTRADOR)
-                .filter(u -> Boolean.TRUE.equals(u.getEmpresa().getActivo()))
-                .orElseThrow(AccesoColaboracionException::new);
+    public InvitacionUsuarioResponseDto invitar(
+            @NotNull
+            @Positive Long administradorId,
+            @NotNull
+            @Valid InvitarUsuarioRequestDto datos) {
+        Usuario administrador =
+                usuarios.buscarConEmpresa(administradorId)
+                        .filter(u -> u.getEstado() == EstadoUsuario.ACTIVO)
+                        .filter(u -> u.getRolAcceso() == RolAcceso.ADMINISTRADOR)
+                        .filter(u -> Boolean.TRUE.equals(u.getEmpresa().getActivo()))
+                        .orElseThrow(AccesoColaboracionException::new);
 
         String correo = datos.getCorreo().strip().toLowerCase(Locale.ROOT);
         if (usuarios.existeCorreoNormalizado(correo)) {
@@ -66,21 +73,32 @@ public class UsuarioInvitacionService {
         invitado.setEstado(EstadoUsuario.INVITADO);
         invitado.setTokenInvitacionHash(hash(token));
         // Mantener la misma precisión que conserva la columna de PostgreSQL.
-        invitado.setInvitacionExpiraEn(OffsetDateTime.now(ZoneOffset.UTC).plusHours(24).truncatedTo(ChronoUnit.MICROS));
+        invitado.setInvitacionExpiraEn(
+                OffsetDateTime.now(ZoneOffset.UTC).plusHours(24).truncatedTo(ChronoUnit.MICROS));
         usuarios.saveAndFlush(invitado);
 
         // Aquí se prepara la invitación; todavía no se envía correo ni se activa la cuenta.
-        return new InvitacionUsuarioResponseDto(modelMapper.map(invitado, UsuarioResponseDto.class),
-                token, invitado.getInvitacionExpiraEn());
+        return new InvitacionUsuarioResponseDto(
+                modelMapper.map(invitado, UsuarioResponseDto.class),
+                token,
+                invitado.getInvitacionExpiraEn());
     }
 
     public UsuarioResponseDto aceptar(@NotNull @Valid AceptarInvitacion datos) {
-        Usuario invitado = usuarios.buscarPorInvitacion(hash(datos.token()))
-                .filter(u -> u.getEstado() == EstadoUsuario.INVITADO)
-                .filter(u -> Boolean.TRUE.equals(u.getEmpresa().getActivo()))
-                .filter(u -> u.getInvitacionExpiraEn() != null
-                        && u.getInvitacionExpiraEn().isAfter(OffsetDateTime.now(ZoneOffset.UTC)))
-                .orElseThrow(() -> new IllegalArgumentException("La invitación no es válida o ya venció."));
+        Usuario invitado =
+                usuarios.buscarPorInvitacion(hash(datos.token()))
+                        .filter(u -> u.getEstado() == EstadoUsuario.INVITADO)
+                        .filter(u -> Boolean.TRUE.equals(u.getEmpresa().getActivo()))
+                        .filter(
+                                u ->
+                                        u.getInvitacionExpiraEn() != null
+                                                && u.getInvitacionExpiraEn()
+                                                        .isAfter(
+                                                                OffsetDateTime.now(ZoneOffset.UTC)))
+                        .orElseThrow(
+                                () ->
+                                        new IllegalArgumentException(
+                                                "La invitación no es válida o ya venció."));
 
         invitado.setPasswordHash(codificador.encode(datos.contrasena()));
         invitado.setEstado(EstadoUsuario.ACTIVO);
@@ -93,8 +111,10 @@ public class UsuarioInvitacionService {
 
     private String hash(String token) {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(token.getBytes(StandardCharsets.UTF_8)));
+            return HexFormat.of()
+                    .formatHex(
+                            MessageDigest.getInstance("SHA-256")
+                                    .digest(token.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException excepcion) {
             throw new IllegalStateException("No se pudo preparar la invitación.", excepcion);
         }

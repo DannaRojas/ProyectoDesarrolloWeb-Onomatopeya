@@ -1,33 +1,65 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.dto.request.*;
-import com.proyecto.inicio.dto.MensajeDto.*;
-import com.proyecto.inicio.dto.FlujoMensajeDto.*;
-import com.proyecto.inicio.dto.PermisoEstructuraDto.*;
-import com.proyecto.inicio.dto.MensajeDto.MensajeResponseDto;
-import com.proyecto.inicio.entity.*;
-import com.proyecto.inicio.entity.enums.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.proyecto.inicio.dto.request.CampoMensajeRequestDto;
+import com.proyecto.inicio.dto.request.FlujoMensajeRequestDto;
+import com.proyecto.inicio.dto.request.MensajeRequestDto;
+import com.proyecto.inicio.dto.request.PermisoEstructuraRequestDto;
+import com.proyecto.inicio.dto.request.UsoMensajeActividadRequestDto;
+import com.proyecto.inicio.dto.response.CampoMensajeResponseDto;
+import com.proyecto.inicio.dto.response.FlujoMensajeResponseDto;
+import com.proyecto.inicio.dto.response.MensajeResponseDto;
+import com.proyecto.inicio.dto.response.PermisoEstructuraResponseDto;
+import com.proyecto.inicio.dto.response.UsoMensajeActividadResponseDto;
+import com.proyecto.inicio.entity.Actividad;
+import com.proyecto.inicio.entity.Empresa;
+import com.proyecto.inicio.entity.Evento;
+import com.proyecto.inicio.entity.Lane;
+import com.proyecto.inicio.entity.Nodo;
+import com.proyecto.inicio.entity.Pool;
+import com.proyecto.inicio.entity.Proceso;
+import com.proyecto.inicio.entity.RolProceso;
+import com.proyecto.inicio.entity.Usuario;
+import com.proyecto.inicio.entity.enums.AccionEstructura;
+import com.proyecto.inicio.entity.enums.EstadoUsuario;
+import com.proyecto.inicio.entity.enums.NaturalezaEvento;
+import com.proyecto.inicio.entity.enums.OperacionEventoMensaje;
+import com.proyecto.inicio.entity.enums.PoliticaFallo;
+import com.proyecto.inicio.entity.enums.PoliticaSinCorrespondencia;
+import com.proyecto.inicio.entity.enums.RecursoEstructura;
+import com.proyecto.inicio.entity.enums.RolAcceso;
+import com.proyecto.inicio.entity.enums.SentidoMensaje;
+import com.proyecto.inicio.entity.enums.TipoActividad;
+import com.proyecto.inicio.entity.enums.TipoCorrelacion;
+import com.proyecto.inicio.entity.enums.TipoDatoMensaje;
+import com.proyecto.inicio.entity.enums.TipoDestinoExterno;
+import com.proyecto.inicio.entity.enums.TipoEvento;
+import com.proyecto.inicio.entity.enums.TipoParticipante;
 import com.proyecto.inicio.exception.AccesoColaboracionException;
-import com.proyecto.inicio.repository.*;
+import com.proyecto.inicio.repository.CampoMensajeRepository;
+import com.proyecto.inicio.repository.FlujoMensajeRepository;
+import com.proyecto.inicio.repository.HistorialCambioRepository;
+import com.proyecto.inicio.repository.MensajeRepository;
+
 import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
-
 @SpringBootTest
 @Transactional
-@Sql(scripts = "/esquema-nodos-mensajeria.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class MensajeriaServiceTest {
     @Autowired EntityManager em;
     @Autowired MensajeService mensajes;
+    @Autowired NodoService nodos;
     @Autowired FlujoMensajeService flujos;
     @Autowired PermisoEstructuraService permisos;
     @Autowired MensajeRepository mensajeRepository;
@@ -43,120 +75,260 @@ class MensajeriaServiceTest {
 
     @BeforeEach
     void prepararDiagrama() {
-        empresa = Empresa.builder().nombre("Empresa prueba").nit(UUID.randomUUID().toString())
-                .correoContacto("contacto@ejemplo.co").activo(true).build();
+        empresa =
+                Empresa.builder()
+                        .nombre("Empresa prueba")
+                        .nit(UUID.randomUUID().toString().substring(0, 30))
+                        .correoContacto("contacto@ejemplo.co")
+                        .activo(true)
+                        .build();
         em.persist(empresa);
         admin = usuario(RolAcceso.ADMINISTRADOR);
         editor = usuario(RolAcceso.EDITOR);
         lector = usuario(RolAcceso.LECTURA);
-        proceso = Proceso.builder().empresa(empresa).creador(admin).nombre("Proceso " + UUID.randomUUID())
-                .descripcion("Prueba de colaboración").categoria("Pruebas").activo(true).build();
+        proceso =
+                Proceso.builder()
+                        .empresa(empresa)
+                        .creador(admin)
+                        .nombre("Proceso " + UUID.randomUUID())
+                        .descripcion("Prueba de colaboración")
+                        .categoria("Pruebas")
+                        .activo(true)
+                        .build();
         em.persist(proceso);
         origen = pool(false);
         destino = pool(false);
         envio = evento(origen, OperacionEventoMensaje.ENVIO);
         recepcion = evento(destino, OperacionEventoMensaje.RECEPCION);
-        RolProceso rol = RolProceso.builder().empresa(empresa).nombre("Analista").activo(true).build();
+        RolProceso rol =
+                RolProceso.builder().empresa(empresa).nombre("Analista").activo(true).build();
         em.persist(rol);
-        Lane lane = Lane.builder().pool(destino).rolProceso(rol).orden(1).altura(100).activo(true).build();
+        Lane lane =
+                Lane.builder()
+                        .pool(destino)
+                        .rolProceso(rol)
+                        .orden(1)
+                        .altura(100)
+                        .activo(true)
+                        .build();
         em.persist(lane);
         actividad = new Actividad();
         completarNodo(actividad, destino);
-        actividad.setTipo(TipoActividad.TAREA); actividad.setLane(lane);
+        actividad.setTipo(TipoActividad.TAREA);
+        actividad.setLane(lane);
         em.persist(actividad);
         em.flush();
     }
 
     @Test
     void persisteContratoYFlujoConConsultasJPQLYAuditoria() {
-        var salida = crear(envio, SentidoMensaje.ENVIO);
-        var entrada = crear(recepcion, SentidoMensaje.RECEPCION);
+        MensajeResponseDto salida = crear(envio, SentidoMensaje.ENVIO);
+        MensajeResponseDto entrada = crear(recepcion, SentidoMensaje.RECEPCION);
         mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
         mensajes.crearCampo(admin.getId(), proceso.getId(), entrada.getId(), campo("radicado"));
-        var flujo = flujos.crear(editor.getId(), proceso.getId(), conexion(origen, destino, envio, recepcion));
-        em.flush(); em.clear();
+        FlujoMensajeResponseDto flujo =
+                flujos.crear(
+                        editor.getId(),
+                        proceso.getId(),
+                        conexion(origen, destino, envio, recepcion));
+        em.flush();
+        em.clear();
         assertThat(mensajes.listar(admin.getId(), proceso.getId())).hasSize(2);
-        assertThat(flujos.listar(admin.getId(), proceso.getId())).extracting("id").containsExactly(flujo.getId());
+        assertThat(flujos.listar(admin.getId(), proceso.getId()))
+                .extracting("id")
+                .containsExactly(flujo.getId());
         assertThat(mensajes.advertencias(admin.getId(), proceso.getId())).isEmpty();
         assertThat(historial.findByEmpresaContextoId(empresa.getId())).hasSize(5);
+    }
+
+    @Test
+    void consultasDelDiagramaConservanMensajeriaDeUnProcesoInactivo() {
+        MensajeResponseDto salida = crear(envio, SentidoMensaje.ENVIO);
+        MensajeResponseDto entrada = crear(recepcion, SentidoMensaje.RECEPCION);
+        mensajes.crearCampo(admin.getId(), proceso.getId(), entrada.getId(), campo("radicado"));
+        mensajes.crearUso(
+                admin.getId(),
+                proceso.getId(),
+                entrada.getId(),
+                new UsoMensajeActividadRequestDto(actividad.getId()));
+        FlujoMensajeResponseDto flujo =
+                flujos.crear(
+                        admin.getId(),
+                        proceso.getId(),
+                        conexion(origen, destino, envio, recepcion));
+        proceso.setActivo(false);
+        em.flush();
+
+        assertThat(mensajes.consultarDetalles(admin.getId(), proceso.getId()))
+                .hasSize(2)
+                .anySatisfy(
+                        detalle -> {
+                            assertThat(detalle.mensaje().getId()).isEqualTo(entrada.getId());
+                            assertThat(detalle.campos()).hasSize(1);
+                            assertThat(detalle.usos()).hasSize(1);
+                        });
+        assertThat(flujos.listarParaDiagrama(admin.getId(), proceso.getId()))
+                .extracting(FlujoMensajeResponseDto::getId)
+                .containsExactly(flujo.getId());
+    }
+
+    @Test
+    void consultasDelDiagramaRechazanUnActorSinAcceso() {
+        Long usuarioInexistente = Long.MAX_VALUE;
+        assertThatThrownBy(() -> mensajes.consultarDetalles(usuarioInexistente, proceso.getId()))
+                .isInstanceOf(AccesoColaboracionException.class);
+        assertThatThrownBy(() -> flujos.listarParaDiagrama(usuarioInexistente, proceso.getId()))
+                .isInstanceOf(AccesoColaboracionException.class);
     }
 
     @Test
     void rechazaFlujosEnUnSoloPoolYOtrosProcesos() {
         crear(envio, SentidoMensaje.ENVIO);
         crear(recepcion, SentidoMensaje.RECEPCION);
-        assertThatThrownBy(() -> flujos.crear(admin.getId(), proceso.getId(), conexion(origen, origen, envio, recepcion)))
+        assertThatThrownBy(
+                        () ->
+                                flujos.crear(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        conexion(origen, origen, envio, recepcion)))
                 .isInstanceOf(IllegalArgumentException.class);
-        Proceso otro = Proceso.builder().empresa(empresa).creador(admin).nombre("Otro").activo(true).build();
+        Proceso otro =
+                Proceso.builder()
+                        .empresa(empresa)
+                        .creador(admin)
+                        .nombre("Otro")
+                        .activo(true)
+                        .build();
         em.persist(otro);
-        destino.setProceso(otro); em.flush();
-        assertThatThrownBy(() -> flujos.crear(admin.getId(), proceso.getId(), conexion(origen, destino, envio, recepcion)))
+        destino.setProceso(otro);
+        em.flush();
+        assertThatThrownBy(
+                        () ->
+                                flujos.crear(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        conexion(origen, destino, envio, recepcion)))
                 .isInstanceOf(jakarta.persistence.EntityNotFoundException.class);
     }
 
     @Test
     void validaDatosYNoPermiteCrearMensajesEnTareasNormales() {
-        var datos = solicitud(actividad, SentidoMensaje.ENVIO);
-        assertThatThrownBy(() -> mensajes.crear(admin.getId(), proceso.getId(), datos)).isInstanceOf(IllegalArgumentException.class);
+        MensajeRequestDto datos = solicitud(actividad, SentidoMensaje.ENVIO);
+        assertThatThrownBy(() -> mensajes.crear(admin.getId(), proceso.getId(), datos))
+                .isInstanceOf(IllegalArgumentException.class);
         datos.setNombre(" ");
-        assertThatThrownBy(() -> mensajes.crear(admin.getId(), proceso.getId(), datos)).isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> mensajes.crear(admin.getId(), proceso.getId(), datos))
+                .isInstanceOf(ConstraintViolationException.class);
         assertThat(mensajeRepository.count()).isZero();
     }
 
     @Test
     void lectorNoModificaYUsuarioAjenoNoConsulta() {
-        assertThatThrownBy(() -> mensajes.crear(lector.getId(), proceso.getId(), solicitud(envio, SentidoMensaje.ENVIO)))
+        assertThatThrownBy(
+                        () ->
+                                mensajes.crear(
+                                        lector.getId(),
+                                        proceso.getId(),
+                                        solicitud(envio, SentidoMensaje.ENVIO)))
                 .isInstanceOf(AccesoColaboracionException.class);
-        Empresa ajena = Empresa.builder().nombre("Ajena").nit(UUID.randomUUID().toString()).correoContacto("a@b.co").activo(true).build();
+        Empresa ajena =
+                Empresa.builder()
+                        .nombre("Ajena")
+                        .nit(UUID.randomUUID().toString().substring(0, 30))
+                        .correoContacto("a@b.co")
+                        .activo(true)
+                        .build();
         em.persist(ajena);
-        editor.setEmpresa(ajena); em.flush();
-        assertThatThrownBy(() -> mensajes.listar(editor.getId(), proceso.getId())).isInstanceOf(AccesoColaboracionException.class);
-        admin.setEstado(EstadoUsuario.INACTIVO); em.flush();
-        assertThatThrownBy(() -> mensajes.listar(admin.getId(), proceso.getId())).isInstanceOf(AccesoColaboracionException.class);
+        editor.setEmpresa(ajena);
+        em.flush();
+        assertThatThrownBy(() -> mensajes.listar(editor.getId(), proceso.getId()))
+                .isInstanceOf(AccesoColaboracionException.class);
+        admin.setEstado(EstadoUsuario.INACTIVO);
+        em.flush();
+        assertThatThrownBy(() -> mensajes.listar(admin.getId(), proceso.getId()))
+                .isInstanceOf(AccesoColaboracionException.class);
     }
 
     @Test
     void correlacionExigeCampoPropioYProtegeSuRetirada() {
-        var salida = crear(envio, SentidoMensaje.ENVIO);
-        var entrada = crear(recepcion, SentidoMensaje.RECEPCION);
-        var campoAjeno = mensajes.crearCampo(admin.getId(), proceso.getId(), entrada.getId(), campo("ajeno"));
-        var datos = solicitud(envio, SentidoMensaje.ENVIO);
-        datos.setVersion(salida.getVersion()); datos.setCorrelacionTipo(TipoCorrelacion.CAMPO);
-        datos.setCorrelacionNegocio(null); datos.setCorrelacionCampoId(campoAjeno.getId());
-        assertThatThrownBy(() -> mensajes.actualizar(admin.getId(), proceso.getId(), salida.getId(), datos))
+        MensajeResponseDto salida = crear(envio, SentidoMensaje.ENVIO);
+        MensajeResponseDto entrada = crear(recepcion, SentidoMensaje.RECEPCION);
+        CampoMensajeResponseDto campoAjeno =
+                mensajes.crearCampo(
+                        admin.getId(), proceso.getId(), entrada.getId(), campo("ajeno"));
+        MensajeRequestDto datos = solicitud(envio, SentidoMensaje.ENVIO);
+        datos.setVersion(salida.getVersion());
+        datos.setCorrelacionTipo(TipoCorrelacion.CAMPO);
+        datos.setCorrelacionNegocio(null);
+        datos.setCorrelacionCampoId(campoAjeno.getId());
+        assertThatThrownBy(
+                        () ->
+                                mensajes.actualizar(
+                                        admin.getId(), proceso.getId(), salida.getId(), datos))
                 .isInstanceOf(IllegalArgumentException.class);
-        var propio = mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
+        CampoMensajeResponseDto propio =
+                mensajes.crearCampo(
+                        admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
         datos.setCorrelacionCampoId(propio.getId());
         mensajes.actualizar(admin.getId(), proceso.getId(), salida.getId(), datos);
-        assertThatThrownBy(() -> mensajes.retirarCampo(admin.getId(), proceso.getId(), salida.getId(), propio.getId(), propio.getVersion(), true))
+        assertThatThrownBy(
+                        () ->
+                                mensajes.retirarCampo(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        salida.getId(),
+                                        propio.getId(),
+                                        propio.getVersion(),
+                                        true))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void nombreDeCampoUnicoYVersionObsoletaSeRechazan() {
-        var salida = crear(envio, SentidoMensaje.ENVIO);
+        MensajeResponseDto salida = crear(envio, SentidoMensaje.ENVIO);
         mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
-        assertThatThrownBy(() -> mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo(" radicado ")))
+        assertThatThrownBy(
+                        () ->
+                                mensajes.crearCampo(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        salida.getId(),
+                                        campo(" radicado ")))
                 .isInstanceOf(IllegalStateException.class);
-        var datos = solicitud(envio, SentidoMensaje.ENVIO);
-        datos.setVersion(salida.getVersion()); datos.setNombre("Renombrado");
+        MensajeRequestDto datos = solicitud(envio, SentidoMensaje.ENVIO);
+        datos.setVersion(salida.getVersion());
+        datos.setNombre("Renombrado");
         mensajes.actualizar(admin.getId(), proceso.getId(), salida.getId(), datos);
-        assertThatThrownBy(() -> mensajes.actualizar(admin.getId(), proceso.getId(), salida.getId(), datos))
+        assertThatThrownBy(
+                        () ->
+                                mensajes.actualizar(
+                                        admin.getId(), proceso.getId(), salida.getId(), datos))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void retirarMensajeConservaCamposYFlujosExternos() {
-        var salida = crear(envio, SentidoMensaje.ENVIO);
-        var campo = mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
+        MensajeResponseDto salida = crear(envio, SentidoMensaje.ENVIO);
+        CampoMensajeResponseDto campo =
+                mensajes.crearCampo(
+                        admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
         Pool externo = pool(true);
-        var solicitud = conexion(origen, externo, envio, null);
-        solicitud.setTipoDestino(TipoDestinoExterno.CORREO); solicitud.setPoliticaFallo(PoliticaFallo.CONTINUAR);
-        var flujo = flujos.crear(admin.getId(), proceso.getId(), solicitud);
-        assertThatThrownBy(() -> mensajes.retirar(admin.getId(), proceso.getId(), salida.getId(), salida.getVersion(), false))
+        FlujoMensajeRequestDto solicitud = conexion(origen, externo, envio, null);
+        solicitud.setTipoDestino(TipoDestinoExterno.CORREO);
+        solicitud.setPoliticaFallo(PoliticaFallo.CONTINUAR);
+        FlujoMensajeResponseDto flujo = flujos.crear(admin.getId(), proceso.getId(), solicitud);
+        assertThatThrownBy(
+                        () ->
+                                mensajes.retirar(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        salida.getId(),
+                                        salida.getVersion(),
+                                        false))
                 .isInstanceOf(IllegalArgumentException.class);
         mensajes.retirar(admin.getId(), proceso.getId(), salida.getId(), salida.getVersion(), true);
-        em.flush(); em.clear();
+        em.flush();
+        em.clear();
         assertThat(mensajeRepository.findById(salida.getId()).orElseThrow().getActivo()).isFalse();
         assertThat(campoRepository.findById(campo.getId()).orElseThrow().getActivo()).isFalse();
         assertThat(flujoRepository.findById(flujo.getId()).orElseThrow().getActivo()).isFalse();
@@ -165,43 +337,140 @@ class MensajeriaServiceTest {
 
     @Test
     void usoSoloAsociaActividadesDelPoolReceptorYPuedeReactivarse() {
-        var entrada = crear(recepcion, SentidoMensaje.RECEPCION);
-        var uso = mensajes.crearUso(editor.getId(), proceso.getId(), entrada.getId(), new UsoMensajeActividadRequestDto(actividad.getId()));
-        mensajes.retirarUso(admin.getId(), proceso.getId(), entrada.getId(), uso.getId(), uso.getVersion(), true);
+        MensajeResponseDto entrada = crear(recepcion, SentidoMensaje.RECEPCION);
+        UsoMensajeActividadResponseDto uso =
+                mensajes.crearUso(
+                        editor.getId(),
+                        proceso.getId(),
+                        entrada.getId(),
+                        new UsoMensajeActividadRequestDto(actividad.getId()));
+        mensajes.retirarUso(
+                admin.getId(),
+                proceso.getId(),
+                entrada.getId(),
+                uso.getId(),
+                uso.getVersion(),
+                true);
         em.flush();
-        assertThat(mensajes.crearUso(admin.getId(), proceso.getId(), entrada.getId(), new UsoMensajeActividadRequestDto(actividad.getId())).getId())
+        assertThat(
+                        mensajes.crearUso(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        entrada.getId(),
+                                        new UsoMensajeActividadRequestDto(actividad.getId()))
+                                .getId())
                 .isEqualTo(uso.getId());
-        var salida = crear(envio, SentidoMensaje.ENVIO);
-        assertThatThrownBy(() -> mensajes.crearUso(admin.getId(), proceso.getId(), salida.getId(), new UsoMensajeActividadRequestDto(actividad.getId())))
+        MensajeResponseDto salida = crear(envio, SentidoMensaje.ENVIO);
+        assertThatThrownBy(
+                        () ->
+                                mensajes.crearUso(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        salida.getId(),
+                                        new UsoMensajeActividadRequestDto(actividad.getId())))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void permisosRespetanAdministradorEditorYLector() {
-        assertThat(permisos.permitido(admin.getId(), proceso.getId(), RecursoEstructura.LANE, AccionEstructura.CREAR)).isTrue();
-        assertThat(permisos.permitido(editor.getId(), proceso.getId(), RecursoEstructura.LANE, AccionEstructura.CREAR)).isFalse();
-        var datos = new PermisoEstructuraRequestDto(RolAcceso.EDITOR, RecursoEstructura.LANE, AccionEstructura.CREAR, true, null);
-        var regla = permisos.guardar(admin.getId(), proceso.getId(), datos);
-        assertThat(permisos.permitido(editor.getId(), proceso.getId(), RecursoEstructura.LANE, AccionEstructura.CREAR)).isTrue();
-        datos.setPermitido(false); datos.setVersion(regla.getVersion());
+        assertThat(
+                        permisos.permitido(
+                                admin.getId(),
+                                proceso.getId(),
+                                RecursoEstructura.LANE,
+                                AccionEstructura.CREAR))
+                .isTrue();
+        assertThat(
+                        permisos.permitido(
+                                editor.getId(),
+                                proceso.getId(),
+                                RecursoEstructura.LANE,
+                                AccionEstructura.CREAR))
+                .isFalse();
+        PermisoEstructuraRequestDto datos =
+                new PermisoEstructuraRequestDto(
+                        RolAcceso.EDITOR,
+                        RecursoEstructura.LANE,
+                        AccionEstructura.CREAR,
+                        true,
+                        null);
+        PermisoEstructuraResponseDto regla =
+                permisos.guardar(admin.getId(), proceso.getId(), datos);
+        assertThat(
+                        permisos.permitido(
+                                editor.getId(),
+                                proceso.getId(),
+                                RecursoEstructura.LANE,
+                                AccionEstructura.CREAR))
+                .isTrue();
+        datos.setPermitido(false);
+        datos.setVersion(regla.getVersion());
         permisos.guardar(admin.getId(), proceso.getId(), datos);
-        assertThat(permisos.permitido(editor.getId(), proceso.getId(), RecursoEstructura.LANE, AccionEstructura.CREAR)).isFalse();
-        datos.setRolAcceso(RolAcceso.LECTURA); datos.setPermitido(true);
-        assertThatThrownBy(() -> permisos.guardar(admin.getId(), proceso.getId(), datos)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> permisos.guardar(editor.getId(), proceso.getId(), datos)).isInstanceOf(AccesoColaboracionException.class);
+        assertThat(
+                        permisos.permitido(
+                                editor.getId(),
+                                proceso.getId(),
+                                RecursoEstructura.LANE,
+                                AccionEstructura.CREAR))
+                .isFalse();
+        datos.setRolAcceso(RolAcceso.LECTURA);
+        datos.setPermitido(true);
+        assertThatThrownBy(() -> permisos.guardar(admin.getId(), proceso.getId(), datos))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> permisos.guardar(editor.getId(), proceso.getId(), datos))
+                .isInstanceOf(AccesoColaboracionException.class);
     }
 
     @Test
     void advierteContratosIncompatiblesSinImpedirGuardarBorrador() {
-        var salida = crear(envio, SentidoMensaje.ENVIO);
-        var datos = solicitud(recepcion, SentidoMensaje.RECEPCION);
-        datos.setNombre("Otro nombre"); datos.setCorrelacionTipo(null); datos.setCorrelacionNegocio(null);
+        MensajeResponseDto salida = crear(envio, SentidoMensaje.ENVIO);
+        MensajeRequestDto datos = solicitud(recepcion, SentidoMensaje.RECEPCION);
+        datos.setNombre("Otro nombre");
+        datos.setCorrelacionTipo(null);
+        datos.setCorrelacionNegocio(null);
         mensajes.crear(admin.getId(), proceso.getId(), datos);
         mensajes.crearCampo(admin.getId(), proceso.getId(), salida.getId(), campo("radicado"));
         flujos.crear(admin.getId(), proceso.getId(), conexion(origen, destino, envio, recepcion));
-        em.flush(); em.clear();
+        em.flush();
+        em.clear();
         assertThat(mensajes.advertencias(admin.getId(), proceso.getId()))
-                .anyMatch(a -> a.contains("nombre")).anyMatch(a -> a.contains("campos")).anyMatch(a -> a.contains("correlación"));
+                .anyMatch(a -> a.contains("nombre"))
+                .anyMatch(a -> a.contains("campos"))
+                .anyMatch(a -> a.contains("correlación"));
+    }
+
+    @Test
+    void recepcionActivaNoPuedeConvertirseEnEventoFinal() {
+        crear(recepcion, SentidoMensaje.RECEPCION);
+        com.proyecto.inicio.dto.request.NodoDatos datos =
+                new com.proyecto.inicio.dto.request.NodoDatos(
+                        com.proyecto.inicio.entity.enums.ClaseNodo.EVENTO,
+                        destino.getId(), "Recepción", 10, 10, 100, 60,
+                        null, null, null, null, TipoEvento.FIN,
+                        NaturalezaEvento.MENSAJE, OperacionEventoMensaje.RECEPCION);
+        assertThatThrownBy(
+                () -> nodos.actualizar(
+                        admin.getId(), proceso.getId(), recepcion.getId(), datos))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fase");
+    }
+
+    @Test
+    void inicioExternoSinCorrelacionAdvierteEnBorrador() {
+        recepcion.setTipo(TipoEvento.INICIO);
+        MensajeRequestDto datos = solicitud(recepcion, SentidoMensaje.RECEPCION);
+        datos.setOrigenExterno(true);
+        datos.setCorrelacionTipo(null);
+        datos.setCorrelacionNegocio(null);
+        mensajes.crear(admin.getId(), proceso.getId(), datos);
+        assertThat(mensajes.advertencias(admin.getId(), proceso.getId()))
+                .anyMatch(aviso -> aviso.contains("correlación"));
+    }
+
+    @Test
+    void nodoDeMensajeSinDeclaracionGeneraAdvertencia() {
+        assertThat(nodos.advertencias(admin.getId(), proceso.getId()))
+                .anyMatch(aviso -> aviso.contains("declaración activa de mensaje"));
     }
 
     private MensajeResponseDto crear(Nodo nodo, SentidoMensaje sentido) {
@@ -209,26 +478,62 @@ class MensajeriaServiceTest {
     }
 
     private MensajeRequestDto solicitud(Nodo nodo, SentidoMensaje sentido) {
-        return new MensajeRequestDto(nodo.getId(), sentido, "Solicitud", false, TipoCorrelacion.NEGOCIO, "radicado", null,
-                sentido == SentidoMensaje.RECEPCION ? PoliticaSinCorrespondencia.DESCARTAR : null, null);
+        return new MensajeRequestDto(
+                nodo.getId(),
+                sentido,
+                "Solicitud",
+                false,
+                TipoCorrelacion.NEGOCIO,
+                "radicado",
+                null,
+                sentido == SentidoMensaje.RECEPCION ? PoliticaSinCorrespondencia.DESCARTAR : null,
+                null);
     }
 
-    private CampoMensajeRequestDto campo(String nombre) { return new CampoMensajeRequestDto(nombre, TipoDatoMensaje.TEXTO, 0, null); }
+    private CampoMensajeRequestDto campo(String nombre) {
+        return new CampoMensajeRequestDto(nombre, TipoDatoMensaje.TEXTO, 0, null);
+    }
 
     private FlujoMensajeRequestDto conexion(Pool a, Pool b, Nodo o, Nodo d) {
-        return new FlujoMensajeRequestDto(a.getId(), b.getId(), o == null ? null : o.getId(), d == null ? null : d.getId(), null, null, null, null);
+        return new FlujoMensajeRequestDto(
+                a.getId(),
+                b.getId(),
+                o == null ? null : o.getId(),
+                d == null ? null : d.getId(),
+                null,
+                null,
+                null,
+                null);
     }
 
     private Usuario usuario(RolAcceso rol) {
-        Usuario usuario = Usuario.builder().empresa(empresa).nombre("Usuario").correo(UUID.randomUUID() + "@ejemplo.co")
-                .rolAcceso(rol).estado(EstadoUsuario.ACTIVO).build();
+        Usuario usuario =
+                Usuario.builder()
+                        .empresa(empresa)
+                        .nombre("Usuario")
+                        .correo(UUID.randomUUID() + "@ejemplo.co")
+                        .rolAcceso(rol)
+                        .estado(EstadoUsuario.ACTIVO)
+                        .build();
         em.persist(usuario);
         return usuario;
     }
 
     private Pool pool(boolean cajaNegra) {
-        Pool pool = Pool.builder().proceso(proceso).nombre("Participante").tipoParticipante(TipoParticipante.EMPRESA)
-                .propietario(false).cajaNegra(cajaNegra).posicionX(0).posicionY(0).ancho(800).alto(400).orden(1).activo(true).build();
+        Pool pool =
+                Pool.builder()
+                        .proceso(proceso)
+                        .nombre("Participante")
+                        .tipoParticipante(TipoParticipante.EMPRESA)
+                        .propietario(false)
+                        .cajaNegra(cajaNegra)
+                        .posicionX(0)
+                        .posicionY(0)
+                        .ancho(800)
+                        .alto(400)
+                        .orden(1)
+                        .activo(true)
+                        .build();
         em.persist(pool);
         return pool;
     }
@@ -236,13 +541,20 @@ class MensajeriaServiceTest {
     private Evento evento(Pool pool, OperacionEventoMensaje operacion) {
         Evento evento = new Evento();
         completarNodo(evento, pool);
-        evento.setTipo(TipoEvento.INTERMEDIO); evento.setNaturaleza(NaturalezaEvento.MENSAJE); evento.setOperacionMensaje(operacion);
+        evento.setTipo(TipoEvento.INTERMEDIO);
+        evento.setNaturaleza(NaturalezaEvento.MENSAJE);
+        evento.setOperacionMensaje(operacion);
         em.persist(evento);
         return evento;
     }
 
     private void completarNodo(Nodo nodo, Pool pool) {
-        nodo.setProceso(proceso); nodo.setPool(pool); nodo.setNombre("Nodo");
-        nodo.setPosicionX(10); nodo.setPosicionY(10); nodo.setAncho(100); nodo.setAlto(60);
+        nodo.setProceso(proceso);
+        nodo.setPool(pool);
+        nodo.setNombre("Nodo");
+        nodo.setPosicionX(10);
+        nodo.setPosicionY(10);
+        nodo.setAncho(100);
+        nodo.setAlto(60);
     }
 }

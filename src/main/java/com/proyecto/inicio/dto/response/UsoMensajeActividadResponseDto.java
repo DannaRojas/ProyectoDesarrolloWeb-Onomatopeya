@@ -9,11 +9,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RolProcesoResponseDto {
-
+public class UsoMensajeActividadResponseDto {
     private Long id;
-    private Long empresaId;
-    private String nombre;
-    private String descripcion;
+    private Long mensajeId;
+    private Long actividadId;
     private Boolean activo;
+    private Long version;
 }

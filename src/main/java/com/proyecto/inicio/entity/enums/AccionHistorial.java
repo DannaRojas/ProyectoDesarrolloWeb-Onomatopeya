@@ -7,5 +7,4 @@ public enum AccionHistorial {
     DESACTIVAR,
     COMPARTIR,
     RENOVAR
-
 }

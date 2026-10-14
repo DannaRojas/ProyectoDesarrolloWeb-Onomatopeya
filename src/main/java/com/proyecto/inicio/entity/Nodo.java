@@ -1,17 +1,42 @@
 package com.proyecto.inicio.entity;
 
 import com.proyecto.inicio.entity.enums.EstadoNodo;
-import jakarta.persistence.*;
-import lombok.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "nodo")
-@org.hibernate.annotations.Check(constraints = "tipo_nodo <> 'ACTIVIDAD' OR (lane_id IS NOT NULL AND tipo_actividad IS NOT NULL)")
+@org.hibernate.annotations.Check(
+        constraints =
+                "tipo_nodo <> 'ACTIVIDAD' OR (lane_id IS NOT NULL AND tipo_actividad IS NOT NULL)")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "tipo_nodo", discriminatorType = DiscriminatorType.STRING, length = 20)
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public abstract class Nodo {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -27,10 +52,13 @@ public abstract class Nodo {
 
     @Column(name = "posicion_x", nullable = false)
     private Integer posicionX;
+
     @Column(name = "posicion_y", nullable = false)
     private Integer posicionY;
+
     @Column(nullable = false)
     private Integer ancho;
+
     @Column(nullable = false)
     private Integer alto;
 

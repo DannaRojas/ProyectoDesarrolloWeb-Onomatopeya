@@ -1,11 +1,29 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.entity.*;
-import com.proyecto.inicio.entity.enums.*;
+import com.proyecto.inicio.entity.HistorialCambio;
+import com.proyecto.inicio.entity.Nodo;
+import com.proyecto.inicio.entity.Pool;
+import com.proyecto.inicio.entity.Proceso;
+import com.proyecto.inicio.entity.Usuario;
+import com.proyecto.inicio.entity.enums.AccionHistorial;
+import com.proyecto.inicio.entity.enums.EstadoNodo;
+import com.proyecto.inicio.entity.enums.EstadoUsuario;
+import com.proyecto.inicio.entity.enums.RolAcceso;
+import com.proyecto.inicio.entity.enums.TipoActor;
 import com.proyecto.inicio.exception.AccesoColaboracionException;
-import com.proyecto.inicio.repository.*;
-import jakarta.persistence.*;
+import com.proyecto.inicio.repository.AccesoProcesoRepository;
+import com.proyecto.inicio.repository.HistorialCambioRepository;
+import com.proyecto.inicio.repository.NodoRepository;
+import com.proyecto.inicio.repository.PoolRepository;
+import com.proyecto.inicio.repository.ProcesoRepository;
+import com.proyecto.inicio.repository.UsuarioRepository;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.LockModeType;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -24,27 +42,46 @@ public class ContextoColaboracionService {
     public Usuario usuario(Long id) {
         if (id == null) throw new AccesoColaboracionException();
         Usuario usuario = usuarios.findById(id).orElseThrow(AccesoColaboracionException::new);
-        if (usuario.getEstado() != EstadoUsuario.ACTIVO || !Boolean.TRUE.equals(usuario.getEmpresa().getActivo()))
+        if (usuario.getEstado() != EstadoUsuario.ACTIVO
+                || !Boolean.TRUE.equals(usuario.getEmpresa().getActivo()))
             throw new AccesoColaboracionException();
         return usuario;
     }
 
     // Todas las operaciones del módulo pasan por el mismo control de empresa y rol.
-    public Proceso proceso(Long usuarioId, Long procesoId, boolean escritura, boolean soloAdministrador) {
+    public Proceso proceso(
+            Long usuarioId, Long procesoId, boolean escritura, boolean soloAdministrador) {
         return proceso(usuarioId, procesoId, escritura, soloAdministrador, false);
     }
 
-    public Proceso proceso(Long usuarioId, Long procesoId, boolean escritura, boolean soloAdministrador, boolean incluirInactivo) {
+    public Proceso proceso(
+            Long usuarioId,
+            Long procesoId,
+            boolean escritura,
+            boolean soloAdministrador,
+            boolean incluirInactivo) {
         Usuario usuario = usuario(usuarioId);
-        Proceso proceso = procesos.findById(procesoId)
-                .filter(p -> (Boolean.TRUE.equals(p.getActivo()) || incluirInactivo && !escritura)
-                        && Boolean.TRUE.equals(p.getEmpresa().getActivo()))
-                .orElseThrow(() -> new EntityNotFoundException("Proceso no encontrado."));
-        boolean propietario = Objects.equals(usuario.getEmpresa().getId(), proceso.getEmpresa().getId());
-        boolean compartido = Boolean.TRUE.equals(proceso.getActivo()) && !escritura && !soloAdministrador && accesos
-                .findByProcesoIdAndEmpresaInvitadaIdAndActivoTrue(procesoId, usuario.getEmpresa().getId()).isPresent();
+        Proceso proceso =
+                procesos.findById(procesoId)
+                        .filter(
+                                p ->
+                                        (Boolean.TRUE.equals(p.getActivo())
+                                                        || incluirInactivo && !escritura)
+                                                && Boolean.TRUE.equals(p.getEmpresa().getActivo()))
+                        .orElseThrow(() -> new EntityNotFoundException("Proceso no encontrado."));
+        boolean propietario =
+                Objects.equals(usuario.getEmpresa().getId(), proceso.getEmpresa().getId());
+        boolean compartido =
+                Boolean.TRUE.equals(proceso.getActivo())
+                        && !escritura
+                        && !soloAdministrador
+                        && accesos.findByProcesoIdAndEmpresaInvitadaIdAndActivoTrue(
+                                        procesoId, usuario.getEmpresa().getId())
+                                .isPresent();
         if (!propietario && !compartido) throw new AccesoColaboracionException();
-        if (escritura && usuario.getRolAcceso() != RolAcceso.ADMINISTRADOR && usuario.getRolAcceso() != RolAcceso.EDITOR)
+        if (escritura
+                && usuario.getRolAcceso() != RolAcceso.ADMINISTRADOR
+                && usuario.getRolAcceso() != RolAcceso.EDITOR)
             throw new AccesoColaboracionException();
         if (soloAdministrador && usuario.getRolAcceso() != RolAcceso.ADMINISTRADOR)
             throw new AccesoColaboracionException();
@@ -55,34 +92,56 @@ public class ContextoColaboracionService {
 
     public Pool pool(Long id, Long procesoId) {
         return pools.findByIdAndProcesoIdAndActivoTrue(id, procesoId)
-                .orElseThrow(() -> new EntityNotFoundException("Pool no encontrado en el proceso."));
+                .orElseThrow(
+                        () -> new EntityNotFoundException("Pool no encontrado en el proceso."));
     }
 
     public Nodo nodo(Long id, Long procesoId) {
         // Al cargar una relación lazy, necesitamos recuperar el subtipo real del nodo.
-        Nodo nodo = org.hibernate.Hibernate.unproxy(
-                nodos.findById(id).orElseThrow(() -> new EntityNotFoundException("Nodo no encontrado.")), Nodo.class);
+        Nodo nodo =
+                org.hibernate.Hibernate.unproxy(
+                        nodos.findById(id)
+                                .orElseThrow(
+                                        () -> new EntityNotFoundException("Nodo no encontrado.")),
+                        Nodo.class);
         if (!Objects.equals(nodo.getProceso().getId(), procesoId)
                 || !Objects.equals(nodo.getPool().getProceso().getId(), procesoId)
                 || nodo.getEstado() == EstadoNodo.RETIRADO
                 || !Boolean.TRUE.equals(nodo.getPool().getActivo())
                 || Boolean.TRUE.equals(nodo.getPool().getCajaNegra()))
-            throw new IllegalArgumentException("El nodo debe estar vigente en un pool abierto del proceso.");
+            throw new IllegalArgumentException(
+                    "El nodo debe estar vigente en un pool abierto del proceso.");
         return nodo;
     }
 
     public void version(Long recibida, Long actual) {
         if (recibida == null || !Objects.equals(recibida, actual))
-            throw new IllegalStateException("El registro cambió. Consulta su versión actual antes de modificarlo.");
+            throw new IllegalStateException(
+                    "El registro cambió. Consulta su versión actual antes de modificarlo.");
     }
 
     public void confirmar(boolean confirmado) {
-        if (!confirmado) throw new IllegalArgumentException("Confirma la retirada antes de continuar.");
+        if (!confirmado)
+            throw new IllegalArgumentException("Confirma la retirada antes de continuar.");
     }
 
-    public void auditar(Long usuarioId, Proceso proceso, String objeto, Long id, AccionHistorial accion, String descripcion) {
-        historial.save(HistorialCambio.builder().empresaContexto(proceso.getEmpresa()).proceso(proceso)
-                .actor(usuario(usuarioId)).tipoActor(TipoActor.USUARIO).tipoObjeto(objeto)
-                .objetoId(id).accion(accion).descripcion(descripcion).build());
+    public void auditar(
+            Long usuarioId,
+            Proceso proceso,
+            String objeto,
+            Long id,
+            AccionHistorial accion,
+            String descripcion) {
+        historial.save(
+                HistorialCambio.builder()
+                        .empresaContexto(proceso.getEmpresa())
+                        .proceso(proceso)
+                        .actor(usuario(usuarioId))
+                        .tipoActor(TipoActor.USUARIO)
+                        .tipoObjeto(objeto)
+                        .objetoId(id)
+                        .accion(accion)
+                        .descripcion(descripcion)
+                        .build());
     }
 }

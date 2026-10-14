@@ -1,12 +1,64 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.dto.DiagramaDto.*;
-import com.proyecto.inicio.dto.ProcesoDto.*;
-import com.proyecto.inicio.dto.PermisoEstructuraDto.PermisoEstructuraRequestDto;
-import com.proyecto.inicio.entity.*;
-import com.proyecto.inicio.entity.enums.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.proyecto.inicio.dto.request.ArcoDatos;
+import com.proyecto.inicio.dto.request.Compartir;
+import com.proyecto.inicio.dto.request.Datos;
+import com.proyecto.inicio.dto.request.LaneDatos;
+import com.proyecto.inicio.dto.request.NodoDatos;
+import com.proyecto.inicio.dto.request.OrdenLane;
+import com.proyecto.inicio.dto.request.OrdenPool;
+import com.proyecto.inicio.dto.request.PermisoEstructuraRequestDto;
+import com.proyecto.inicio.dto.request.PoolDatos;
+import com.proyecto.inicio.dto.request.Reordenar;
+import com.proyecto.inicio.dto.request.ReordenarPools;
+import com.proyecto.inicio.dto.request.Retirada;
+import com.proyecto.inicio.dto.request.RolDatos;
+import com.proyecto.inicio.dto.response.ArcoVista;
+import com.proyecto.inicio.dto.response.Detalle;
+import com.proyecto.inicio.dto.response.Ficha;
+import com.proyecto.inicio.dto.response.LaneVista;
+import com.proyecto.inicio.dto.response.NodoVista;
+import com.proyecto.inicio.dto.response.Pagina;
+import com.proyecto.inicio.dto.response.PoolVista;
+import com.proyecto.inicio.dto.response.RolVista;
+import com.proyecto.inicio.entity.Actividad;
+import com.proyecto.inicio.entity.Arco;
+import com.proyecto.inicio.entity.FlujoMensaje;
+import com.proyecto.inicio.entity.Proceso;
+import com.proyecto.inicio.entity.RolProceso;
+import com.proyecto.inicio.entity.Usuario;
+import com.proyecto.inicio.entity.enums.AccionEstructura;
+import com.proyecto.inicio.entity.enums.AccionHistorial;
+import com.proyecto.inicio.entity.enums.ClaseNodo;
+import com.proyecto.inicio.entity.enums.DireccionGateway;
+import com.proyecto.inicio.entity.enums.EstadoNodo;
+import com.proyecto.inicio.entity.enums.EstadoPublicacion;
+import com.proyecto.inicio.entity.enums.NaturalezaEvento;
+import com.proyecto.inicio.entity.enums.PoliticaFallo;
+import com.proyecto.inicio.entity.enums.RecursoEstructura;
+import com.proyecto.inicio.entity.enums.RolAcceso;
+import com.proyecto.inicio.entity.enums.TipoActividad;
+import com.proyecto.inicio.entity.enums.TipoEvento;
+import com.proyecto.inicio.entity.enums.TipoGateway;
+import com.proyecto.inicio.entity.enums.TipoParticipante;
 import com.proyecto.inicio.exception.AccesoColaboracionException;
-import com.proyecto.inicio.repository.*;
+import com.proyecto.inicio.repository.ArcoRepository;
+import com.proyecto.inicio.repository.FlujoMensajeRepository;
+import com.proyecto.inicio.repository.LaneRepository;
+import com.proyecto.inicio.repository.NodoRepository;
+import com.proyecto.inicio.repository.ProcesoRepository;
+import com.proyecto.inicio.repository.RolProcesoRepository;
+import com.proyecto.inicio.repository.UsuarioRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,20 +68,22 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
+
 import tools.jackson.databind.ObjectMapper;
+
 import java.util.List;
 import java.util.Map;
-import static org.assertj.core.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ActiveProfiles("conexion-empresa")
-@SpringBootTest(properties = {
-    "spring.datasource.url=jdbc:h2:mem:entrega-backend;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-    "spring.datasource.username=sa", "spring.datasource.password=",
-    "spring.jpa.hibernate.ddl-auto=create-drop", "app.datos-demo=true",
-    "spring.jpa.properties.hibernate.hbm2ddl.halt_on_error=true"
-})
+@SpringBootTest(
+        properties = {
+            "spring.datasource.url=jdbc:h2:mem:entrega-backend;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+            "spring.datasource.username=sa",
+            "spring.datasource.password=",
+            "spring.jpa.hibernate.ddl-auto=create-drop",
+            "app.datos-demo=true",
+            "spring.jpa.properties.hibernate.hbm2ddl.halt_on_error=true"
+        })
 @Transactional
 class EntregaBackendTest {
     @Autowired ProcesoService procesos;
@@ -68,13 +122,30 @@ class EntregaBackendTest {
 
     @Test
     void buscaPorNombreCategoriaEstadoYPagina() {
-        procesos.actualizar(admin.getId(), proceso.getId(), new Datos("Compra de insumos", "Detalle", "Compras",
-                EstadoPublicacion.BORRADOR, proceso.getVersion()));
-        var pagina = procesos.buscar(admin.getId(), "INSUMOS", "compras", EstadoPublicacion.BORRADOR, true, 0, 1);
+        procesos.actualizar(
+                admin.getId(),
+                proceso.getId(),
+                new Datos(
+                        "Compra de insumos",
+                        "Detalle",
+                        "Compras",
+                        EstadoPublicacion.BORRADOR,
+                        proceso.getVersion()));
+        Pagina pagina =
+                procesos.buscar(
+                        admin.getId(),
+                        "INSUMOS",
+                        "compras",
+                        EstadoPublicacion.BORRADOR,
+                        true,
+                        0,
+                        1);
         assertThat(pagina.total()).isEqualTo(1);
         assertThat(pagina.contenido()).extracting(Ficha::id).containsExactly(proceso.getId());
-        assertThat(procesos.buscar(admin.getId(), null, "Ventas", null, true, 0, 10).contenido()).isEmpty();
-        assertThat(procesos.historial(admin.getId(), proceso.getId())).anyMatch(h -> h.accion() == AccionHistorial.ACTUALIZAR);
+        assertThat(procesos.buscar(admin.getId(), null, "Ventas", null, true, 0, 10).contenido())
+                .isEmpty();
+        assertThat(procesos.historial(admin.getId(), proceso.getId()))
+                .anyMatch(h -> h.accion() == AccionHistorial.ACTUALIZAR);
     }
 
     @Test
@@ -82,108 +153,224 @@ class EntregaBackendTest {
         long totalNodos = nodoRepo.count();
         procesos.retirar(admin.getId(), proceso.getId(), new Retirada(proceso.getVersion(), true));
         assertThat(procesos.consultar(admin.getId(), proceso.getId()).activo()).isFalse();
-        assertThat(procesos.buscar(admin.getId(), null, null, null, false, 0, 10).total()).isEqualTo(1);
+        assertThat(procesos.buscar(admin.getId(), null, null, null, false, 0, 10).total())
+                .isEqualTo(1);
         assertThat(diagramas.consultar(admin.getId(), proceso.getId()).nodos()).hasSize(7);
         assertThat(nodoRepo.count()).isEqualTo(totalNodos);
-        assertThat(procesos.historial(admin.getId(), proceso.getId())).anyMatch(h -> h.accion() == AccionHistorial.DESACTIVAR);
+        assertThat(procesos.historial(admin.getId(), proceso.getId()))
+                .anyMatch(h -> h.accion() == AccionHistorial.DESACTIVAR);
     }
 
     @Test
     void editorNoRetiraProcesoYLectorNoLoEdita() {
-        assertThatThrownBy(() -> procesos.retirar(editor.getId(), proceso.getId(), new Retirada(proceso.getVersion(), true)))
+        assertThatThrownBy(
+                        () ->
+                                procesos.retirar(
+                                        editor.getId(),
+                                        proceso.getId(),
+                                        new Retirada(proceso.getVersion(), true)))
                 .isInstanceOf(AccesoColaboracionException.class);
-        assertThatThrownBy(() -> procesos.actualizar(lector.getId(), proceso.getId(), datosProceso(EstadoPublicacion.BORRADOR)))
+        assertThatThrownBy(
+                        () ->
+                                procesos.actualizar(
+                                        lector.getId(),
+                                        proceso.getId(),
+                                        datosProceso(EstadoPublicacion.BORRADOR)))
                 .isInstanceOf(AccesoColaboracionException.class);
     }
 
     @Test
     void compartirDaSoloLecturaYRevocarRetiraElAcceso() {
-        procesos.compartir(admin.getId(), proceso.getId(), new Compartir(ajeno.getEmpresa().getId(), true, proceso.getVersion()));
+        procesos.compartir(
+                admin.getId(),
+                proceso.getId(),
+                new Compartir(ajeno.getEmpresa().getId(), true, proceso.getVersion()));
         assertThat(diagramas.consultar(ajeno.getId(), proceso.getId()).nodos()).hasSize(7);
-        assertThat(procesos.buscar(ajeno.getId(), null, null, null, true, 0, 10).total()).isEqualTo(2);
-        assertThatThrownBy(() -> procesos.actualizar(ajeno.getId(), proceso.getId(), datosProceso(EstadoPublicacion.BORRADOR)))
+        assertThat(procesos.buscar(ajeno.getId(), null, null, null, true, 0, 10).total())
+                .isEqualTo(2);
+        assertThatThrownBy(
+                        () ->
+                                procesos.actualizar(
+                                        ajeno.getId(),
+                                        proceso.getId(),
+                                        datosProceso(EstadoPublicacion.BORRADOR)))
                 .isInstanceOf(AccesoColaboracionException.class);
     }
 
     @Test
     void revocarImpideConsultarElDiagramaCompartido() {
-        procesos.compartir(admin.getId(), proceso.getId(), new Compartir(ajeno.getEmpresa().getId(), true, proceso.getVersion()));
-        procesos.compartir(admin.getId(), proceso.getId(), new Compartir(ajeno.getEmpresa().getId(), false, proceso.getVersion()));
-        assertThatThrownBy(() -> diagramas.consultar(ajeno.getId(), proceso.getId())).isInstanceOf(AccesoColaboracionException.class);
+        procesos.compartir(
+                admin.getId(),
+                proceso.getId(),
+                new Compartir(ajeno.getEmpresa().getId(), true, proceso.getVersion()));
+        procesos.compartir(
+                admin.getId(),
+                proceso.getId(),
+                new Compartir(ajeno.getEmpresa().getId(), false, proceso.getVersion()));
+        assertThatThrownBy(() -> diagramas.consultar(ajeno.getId(), proceso.getId()))
+                .isInstanceOf(AccesoColaboracionException.class);
     }
 
     @Test
     void publicaDiagramaCompleto() {
-        assertThat(procesos.actualizar(admin.getId(), proceso.getId(), datosProceso(EstadoPublicacion.PUBLICADO))
-                .estadoPublicacion()).isEqualTo(EstadoPublicacion.PUBLICADO);
+        assertThat(
+                        procesos.actualizar(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        datosProceso(EstadoPublicacion.PUBLICADO))
+                                .estadoPublicacion())
+                .isEqualTo(EstadoPublicacion.PUBLICADO);
     }
 
     @Test
     void borradorSinNodosNoSePuedePublicar() {
-        Ficha nuevo = procesos.crear(admin.getId(), new Datos("Proceso vacío", null, "Demo", EstadoPublicacion.BORRADOR, null));
-        assertThatThrownBy(() -> procesos.actualizar(admin.getId(), nuevo.id(), new Datos(nuevo.nombre(), null, "Demo",
-                EstadoPublicacion.PUBLICADO, nuevo.version()))).isInstanceOf(IllegalStateException.class);
+        Ficha nuevo =
+                procesos.crear(
+                        admin.getId(),
+                        new Datos("Proceso vacío", null, "Demo", EstadoPublicacion.BORRADOR, null));
+        assertThatThrownBy(
+                        () ->
+                                procesos.actualizar(
+                                        admin.getId(),
+                                        nuevo.id(),
+                                        new Datos(
+                                                nuevo.nombre(),
+                                                null,
+                                                "Demo",
+                                                EstadoPublicacion.PUBLICADO,
+                                                nuevo.version())))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void retirarActividadNoBorraArcosFisicamente() {
         NodoVista actividad = tarea();
         long total = arcoRepo.count();
-        var conectados = arcoRepo.conectados(actividad.id());
+        List<Arco> conectados = arcoRepo.conectados(actividad.id());
         assertThat(conectados).hasSize(2);
-        assertThat(nodos.retirar(admin.getId(), proceso.getId(), actividad.id(), new Retirada(proceso.getVersion(), true)))
+        assertThat(
+                        nodos.retirar(
+                                admin.getId(),
+                                proceso.getId(),
+                                actividad.id(),
+                                new Retirada(proceso.getVersion(), true)))
                 .isNotEmpty();
         assertThat(arcoRepo.count()).isEqualTo(total);
         assertThat(conectados).allMatch(a -> !a.getActivo());
-        assertThat(nodoRepo.findById(actividad.id()).orElseThrow().getEstado()).isEqualTo(EstadoNodo.RETIRADO);
-        assertThat(procesos.historial(admin.getId(), proceso.getId())).anyMatch(h -> h.tipoObjeto().equals("NODO")
-                && h.accion() == AccionHistorial.DESACTIVAR);
+        assertThat(nodoRepo.findById(actividad.id()).orElseThrow().getEstado())
+                .isEqualTo(EstadoNodo.RETIRADO);
+        assertThat(procesos.historial(admin.getId(), proceso.getId()))
+                .anyMatch(
+                        h ->
+                                h.tipoObjeto().equals("NODO")
+                                        && h.accion() == AccionHistorial.DESACTIVAR);
     }
 
     @Test
     void actividadDeManejoDeErrorNoSeRetiraSinReasignar() {
         NodoVista actividad = tarea();
-        var flujo = flujoRepo.listarActivos(proceso.getId()).get(0);
-        flujo.setActividadError((Actividad) org.hibernate.Hibernate.unproxy(nodoRepo.findById(actividad.id()).orElseThrow()));
+        FlujoMensaje flujo = flujoRepo.listarActivos(proceso.getId()).get(0);
+        flujo.setActividadError(
+                (Actividad)
+                        org.hibernate.Hibernate.unproxy(
+                                nodoRepo.findById(actividad.id()).orElseThrow()));
         flujo.setPoliticaFallo(PoliticaFallo.DERIVAR);
         flujoRepo.saveAndFlush(flujo);
-        assertThatThrownBy(() -> nodos.retirar(admin.getId(), proceso.getId(), actividad.id(), new Retirada(proceso.getVersion(), true)))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("Reasigna");
+        assertThatThrownBy(
+                        () ->
+                                nodos.retirar(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        actividad.id(),
+                                        new Retirada(proceso.getVersion(), true)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Reasigna");
         assertThat(flujo.getPoliticaFallo()).isEqualTo(PoliticaFallo.DERIVAR);
     }
 
     @Test
     void editarActividadConservaSusConexiones() {
         NodoVista actividad = tarea();
-        assertThat(nodos.actualizar(editor.getId(), proceso.getId(), actividad.id(), datosNodo(actividad, "Aprobar compra"))
-                .nombre()).isEqualTo("Aprobar compra");
+        assertThat(
+                        nodos.actualizar(
+                                        editor.getId(),
+                                        proceso.getId(),
+                                        actividad.id(),
+                                        datosNodo(actividad, "Aprobar compra"))
+                                .nombre())
+                .isEqualTo("Aprobar compra");
         assertThat(arcoRepo.conectados(actividad.id())).hasSize(2);
     }
 
     @Test
     void cambiarGatewayAParaleloLimpiaCondiciones() {
-        NodoVista gateway = detalle.nodos().stream().filter(n -> n.clase() == ClaseNodo.GATEWAY).findFirst().orElseThrow();
-        var datos = new NodoDatos(ClaseNodo.GATEWAY, gateway.poolId(), gateway.nombre(), 500, 100, 50, 50,
-                null, null, TipoGateway.PARALELO, DireccionGateway.DIVERGENCIA, null, null, null);
+        NodoVista gateway =
+                detalle.nodos().stream()
+                        .filter(n -> n.clase() == ClaseNodo.GATEWAY)
+                        .findFirst()
+                        .orElseThrow();
+        NodoDatos datos =
+                new NodoDatos(
+                        ClaseNodo.GATEWAY,
+                        gateway.poolId(),
+                        gateway.nombre(),
+                        500,
+                        100,
+                        50,
+                        50,
+                        null,
+                        null,
+                        TipoGateway.PARALELO,
+                        DireccionGateway.DIVERGENCIA,
+                        null,
+                        null,
+                        null);
         nodos.actualizar(editor.getId(), proceso.getId(), gateway.id(), datos);
-        assertThat(arcoRepo.salientes(gateway.id())).hasSize(2).allMatch(a -> a.getCondicionSalida() == null);
+        assertThat(arcoRepo.salientes(gateway.id()))
+                .hasSize(2)
+                .allMatch(a -> a.getCondicionSalida() == null);
     }
 
     @Test
     void gatewayExclusivoRequiereCondicionesDeSalida() {
-        NodoVista gateway = detalle.nodos().stream().filter(n -> n.clase() == ClaseNodo.GATEWAY).findFirst().orElseThrow();
+        NodoVista gateway =
+                detalle.nodos().stream()
+                        .filter(n -> n.clase() == ClaseNodo.GATEWAY)
+                        .findFirst()
+                        .orElseThrow();
         arcoRepo.salientes(gateway.id()).forEach(a -> a.setCondicionSalida(null));
-        assertThatThrownBy(() -> nodos.actualizar(editor.getId(), proceso.getId(), gateway.id(), datosNodo(gateway, gateway.nombre())))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("condiciones");
+        assertThatThrownBy(
+                        () ->
+                                nodos.actualizar(
+                                        editor.getId(),
+                                        proceso.getId(),
+                                        gateway.id(),
+                                        datosNodo(gateway, gateway.nombre())))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("condiciones");
     }
 
     @Test
     void editarYRetirarArcoMantieneElRegistro() {
         ArcoVista arco = detalle.arcos().get(0);
-        assertThat(arcos.actualizar(editor.getId(), proceso.getId(), arco.id(),
-                new ArcoDatos(arco.origenId(), arco.destinoId(), "Solicitud", arco.condicionSalida())).etiqueta()).isEqualTo("Solicitud");
+        assertThat(
+                        arcos.actualizar(
+                                        editor.getId(),
+                                        proceso.getId(),
+                                        arco.id(),
+                                        new ArcoDatos(
+                                                arco.origenId(),
+                                                arco.destinoId(),
+                                                "Solicitud",
+                                                arco.condicionSalida()))
+                                .etiqueta())
+                .isEqualTo("Solicitud");
         long total = arcoRepo.count();
-        arcos.retirar(admin.getId(), proceso.getId(), arco.id(), new Retirada(proceso.getVersion(), true));
+        arcos.retirar(
+                admin.getId(),
+                proceso.getId(),
+                arco.id(),
+                new Retirada(proceso.getVersion(), true));
         assertThat(arcoRepo.count()).isEqualTo(total);
         assertThat(arcoRepo.findById(arco.id()).orElseThrow().getActivo()).isFalse();
     }
@@ -191,55 +378,118 @@ class EntregaBackendTest {
     @Test
     void laneConActividadesNoSeRetira() {
         LaneVista lane = detalle.lanes().get(0);
-        assertThatThrownBy(() -> lanes.retirar(admin.getId(), proceso.getId(), lane.poolId(), lane.id(), new Retirada(lane.version(), true)))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("actividades");
+        assertThatThrownBy(
+                        () ->
+                                lanes.retirar(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        lane.poolId(),
+                                        lane.id(),
+                                        new Retirada(lane.version(), true)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("actividades");
     }
 
     @Test
     void reordenarLanesNoChocaConSuOrdenUnico() {
         LaneVista primera = detalle.lanes().get(0);
-        LaneVista segunda = lanes.crear(admin.getId(), proceso.getId(), primera.poolId(), new LaneDatos(primera.rolProcesoId(), 2, 200, null));
-        var orden = lanes.reordenar(admin.getId(), proceso.getId(), primera.poolId(),
-                new Reordenar(List.of(new OrdenLane(segunda.id(), segunda.version()), new OrdenLane(primera.id(), primera.version()))));
+        LaneVista segunda =
+                lanes.crear(
+                        admin.getId(),
+                        proceso.getId(),
+                        primera.poolId(),
+                        new LaneDatos(primera.rolProcesoId(), 2, 200, null));
+        List<LaneVista> orden =
+                lanes.reordenar(
+                        admin.getId(),
+                        proceso.getId(),
+                        primera.poolId(),
+                        new Reordenar(
+                                List.of(
+                                        new OrdenLane(segunda.id(), segunda.version()),
+                                        new OrdenLane(primera.id(), primera.version()))));
         assertThat(orden).extracting(LaneVista::id).containsExactly(segunda.id(), primera.id());
         assertThat(orden).extracting(LaneVista::orden).doesNotHaveDuplicates();
     }
 
     @Test
     void cajaNegraNoPermiteNodosNiLanes() {
-        PoolVista caja = detalle.pools().stream().filter(PoolVista::cajaNegra).findFirst().orElseThrow();
-        assertThatThrownBy(() -> lanes.crear(admin.getId(), proceso.getId(), caja.id(),
-                new LaneDatos(detalle.lanes().get(0).rolProcesoId(), 1, 200, null))).isInstanceOf(IllegalArgumentException.class);
-        var datos = new NodoDatos(ClaseNodo.EVENTO, caja.id(), "Inicio", 0, 0, 50, 50,
-                null, null, null, null, TipoEvento.INICIO, NaturalezaEvento.NORMAL, null);
-        assertThatThrownBy(() -> nodos.crear(admin.getId(), proceso.getId(), datos)).isInstanceOf(IllegalArgumentException.class);
+        PoolVista caja =
+                detalle.pools().stream().filter(PoolVista::cajaNegra).findFirst().orElseThrow();
+        assertThatThrownBy(
+                        () ->
+                                lanes.crear(
+                                        admin.getId(),
+                                        proceso.getId(),
+                                        caja.id(),
+                                        new LaneDatos(
+                                                detalle.lanes().get(0).rolProcesoId(),
+                                                1,
+                                                200,
+                                                null)))
+                .isInstanceOf(IllegalArgumentException.class);
+        NodoDatos datos =
+                new NodoDatos(
+                        ClaseNodo.EVENTO,
+                        caja.id(),
+                        "Inicio",
+                        0,
+                        0,
+                        50,
+                        50,
+                        null,
+                        null,
+                        null,
+                        null,
+                        TipoEvento.INICIO,
+                        NaturalezaEvento.NORMAL,
+                        null);
+        assertThatThrownBy(() -> nodos.crear(admin.getId(), proceso.getId(), datos))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void editorNecesitaPermisoExplicitoParaCrearPools() {
-        assertThatThrownBy(() -> pools.crear(editor.getId(), proceso.getId(), datosPool())).isInstanceOf(AccesoColaboracionException.class);
+        assertThatThrownBy(() -> pools.crear(editor.getId(), proceso.getId(), datosPool()))
+                .isInstanceOf(AccesoColaboracionException.class);
     }
 
     @Test
     void permisoDeEstructuraHabilitaAlEditor() {
-        permisos.guardar(admin.getId(), proceso.getId(), new PermisoEstructuraRequestDto(RolAcceso.EDITOR,
-                RecursoEstructura.POOL, AccionEstructura.CREAR, true, null));
+        permisos.guardar(
+                admin.getId(),
+                proceso.getId(),
+                new PermisoEstructuraRequestDto(
+                        RolAcceso.EDITOR,
+                        RecursoEstructura.POOL,
+                        AccionEstructura.CREAR,
+                        true,
+                        null));
         assertThat(pools.crear(editor.getId(), proceso.getId(), datosPool()).cajaNegra()).isTrue();
     }
 
     @Test
     void rolEnUsoNoSeRetiraYElRenombreSeVeEnLaLane() {
         LaneVista lane = detalle.lanes().get(0);
-        var rol = rolRepo.findById(lane.rolProcesoId()).orElseThrow();
-        roles.actualizar(admin.getId(), rol.getId(), new RolDatos("Gestión de compras", "Responsable", rol.getVersion()));
-        assertThat(lanes.listar(admin.getId(), proceso.getId(), lane.poolId()).get(0).nombre()).isEqualTo("Gestión de compras");
-        assertThatThrownBy(() -> roles.retirar(admin.getId(), rol.getId(), new Retirada(rol.getVersion(), true)))
+        RolProceso rol = rolRepo.findById(lane.rolProcesoId()).orElseThrow();
+        roles.actualizar(
+                admin.getId(),
+                rol.getId(),
+                new RolDatos("Gestión de compras", "Responsable", rol.getVersion()));
+        assertThat(lanes.listar(admin.getId(), proceso.getId(), lane.poolId()).get(0).nombre())
+                .isEqualTo("Gestión de compras");
+        assertThatThrownBy(
+                        () ->
+                                roles.retirar(
+                                        admin.getId(),
+                                        rol.getId(),
+                                        new Retirada(rol.getVersion(), true)))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void rolSinUsoSeRetiraSinBorrarlo() {
-        var rol = roles.crear(admin.getId(), new RolDatos("Rol temporal", null, null));
+        RolVista rol = roles.crear(admin.getId(), new RolDatos("Rol temporal", null, null));
         roles.retirar(admin.getId(), rol.id(), new Retirada(rol.version(), true));
         assertThat(rolRepo.findById(rol.id()).orElseThrow().getActivo()).isFalse();
     }
@@ -248,8 +498,14 @@ class EntregaBackendTest {
     void reordenarPoolsConservaElPropietarioYLasVersiones() {
         PoolVista primero = detalle.pools().get(0);
         PoolVista segundo = detalle.pools().get(1);
-        var resultado = pools.reordenar(admin.getId(), proceso.getId(), new ReordenarPools(List.of(
-                new OrdenPool(segundo.id(), segundo.version()), new OrdenPool(primero.id(), primero.version()))));
+        List<PoolVista> resultado =
+                pools.reordenar(
+                        admin.getId(),
+                        proceso.getId(),
+                        new ReordenarPools(
+                                List.of(
+                                        new OrdenPool(segundo.id(), segundo.version()),
+                                        new OrdenPool(primero.id(), primero.version()))));
         assertThat(resultado).extracting(PoolVista::id).containsExactly(segundo.id(), primero.id());
         assertThat(resultado).filteredOn(PoolVista::propietario).hasSize(1);
         assertThat(resultado).extracting(PoolVista::orden).containsExactly(1, 2);
@@ -263,58 +519,227 @@ class EntregaBackendTest {
     }
 
     @Test
+    void soloElAdministradorPuedeEditarSuEmpresa() throws Exception {
+        String ruta = "/empresas/" + admin.getEmpresa().getId();
+        String cuerpo = json.writeValueAsString(Map.of(
+                "nombre", "Empresa corregida",
+                "nit", admin.getEmpresa().getNit(),
+                "correoContacto", "contacto@ejemplo.co"));
+        for (Usuario actor : List.of(editor, lector, ajeno)) {
+            mvc.perform(put(ruta).principal(actor::getCorreo)
+                    .contentType("application/json").content(cuerpo))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(put(ruta).principal(admin::getCorreo)
+                .contentType("application/json").content(cuerpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Empresa corregida"));
+        mvc.perform(get("/empresas").principal(admin::getCorreo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/empresas/" + ajeno.getEmpresa().getId())
+                .principal(admin::getCorreo))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void buscaRolPorDescripcionSinMezclarEmpresas() {
+        RolVista creado = roles.crear(
+                admin.getId(),
+                new RolDatos("Contabilidad", "Revisa facturas especiales", null));
+        assertThat(roles.buscar(admin.getId(), "FACTURAS", 0, 10).contenido())
+                .extracting(RolVista::id).containsExactly(creado.id());
+        assertThat(roles.buscar(ajeno.getId(), "FACTURAS", 0, 10).contenido()).isEmpty();
+    }
+
+    @Test
     void gestionDeEstructuraYNodosFuncionaPorHttp() throws Exception {
         String raiz = "/procesos/" + proceso.getId();
-        mvc.perform(post("/roles-proceso").principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new RolDatos("Rol HTTP", null, null)))).andExpect(status().isCreated());
-        var rol = roles.buscar(admin.getId(), "Rol HTTP", 0, 10).contenido().get(0);
-        mvc.perform(put("/roles-proceso/" + rol.id()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new RolDatos("Rol actualizado HTTP", null, rol.version()))))
+        mvc.perform(
+                        post("/roles-proceso")
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new RolDatos("Rol HTTP", null, null))))
+                .andExpect(status().isCreated());
+        RolVista rol = roles.buscar(admin.getId(), "Rol HTTP", 0, 10).contenido().get(0);
+        mvc.perform(
+                        put("/roles-proceso/" + rol.id())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new RolDatos(
+                                                        "Rol actualizado HTTP",
+                                                        null,
+                                                        rol.version()))))
                 .andExpect(status().isOk());
-        mvc.perform(post(raiz + "/pools").principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(datosPool()))).andExpect(status().isCreated());
-        var pool = pools.listar(admin.getId(), proceso.getId()).stream()
-                .filter(p -> p.nombre().equals("Otro participante")).findFirst().orElseThrow();
-        mvc.perform(put(raiz + "/pools/" + pool.id()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new PoolDatos("Pool HTTP", pool.tipoParticipante(), true,
-                        0, 800, 300, 150, 3, pool.version())))).andExpect(status().isOk());
+        mvc.perform(
+                        post(raiz + "/pools")
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(json.writeValueAsString(datosPool())))
+                .andExpect(status().isCreated());
+        PoolVista pool =
+                pools.listar(admin.getId(), proceso.getId()).stream()
+                        .filter(p -> p.nombre().equals("Otro participante"))
+                        .findFirst()
+                        .orElseThrow();
+        mvc.perform(
+                        put(raiz + "/pools/" + pool.id())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new PoolDatos(
+                                                        "Pool HTTP",
+                                                        pool.tipoParticipante(),
+                                                        true,
+                                                        0,
+                                                        800,
+                                                        300,
+                                                        150,
+                                                        3,
+                                                        pool.version()))))
+                .andExpect(status().isOk());
         Long propietario = detalle.lanes().get(0).poolId();
         String rutaLanes = raiz + "/pools/" + propietario + "/lanes";
-        mvc.perform(post(rutaLanes).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new LaneDatos(rol.id(), 2, 200, null)))).andExpect(status().isCreated());
+        mvc.perform(
+                        post(rutaLanes)
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new LaneDatos(rol.id(), 2, 200, null))))
+                .andExpect(status().isCreated());
         LaneVista lane = lanes.listar(admin.getId(), proceso.getId(), propietario).get(1);
-        mvc.perform(put(rutaLanes + "/" + lane.id()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new LaneDatos(rol.id(), 2, 250, lane.version())))).andExpect(status().isOk());
-        mvc.perform(get(rutaLanes).principal(admin::getCorreo)).andExpect(status().isOk())
+        mvc.perform(
+                        put(rutaLanes + "/" + lane.id())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new LaneDatos(rol.id(), 2, 250, lane.version()))))
+                .andExpect(status().isOk());
+        mvc.perform(get(rutaLanes).principal(admin::getCorreo))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
-        var datos = new NodoDatos(ClaseNodo.ACTIVIDAD, propietario, "Actividad HTTP", 100, 100, 100, 50,
-                lane.id(), TipoActividad.TAREA, null, null, null, null, null);
-        mvc.perform(post(raiz + "/nodos").principal(editor::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(datos))).andExpect(status().isCreated());
-        var nodo = nodos.listar(admin.getId(), proceso.getId()).stream()
-                .filter(n -> n.nombre().equals("Actividad HTTP")).findFirst().orElseThrow();
-        mvc.perform(put(raiz + "/nodos/" + nodo.id()).principal(editor::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(datosNodo(nodo, "Actividad editada HTTP")))).andExpect(status().isOk());
-        var inicio = detalle.nodos().stream().filter(n -> n.tipoEvento() == TipoEvento.INICIO).findFirst().orElseThrow();
-        var conexion = new ArcoDatos(inicio.id(), nodo.id(), "HTTP", null);
-        mvc.perform(post(raiz + "/arcos").principal(editor::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(conexion))).andExpect(status().isCreated());
-        var arco = arcoRepo.buscarPar(inicio.id(), nodo.id()).orElseThrow();
-        mvc.perform(put(raiz + "/arcos/" + arco.getId()).principal(editor::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(conexion))).andExpect(status().isOk());
-        mvc.perform(delete(raiz + "/arcos/" + arco.getId()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new Retirada(proceso.getVersion(), true)))).andExpect(status().isOk());
-        mvc.perform(delete(raiz + "/nodos/" + nodo.id()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new Retirada(proceso.getVersion(), true)))).andExpect(status().isOk());
-        mvc.perform(delete(rutaLanes + "/" + lane.id()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new Retirada(laneRepo.findById(lane.id()).orElseThrow().getVersion(), true))))
+        NodoDatos datos =
+                new NodoDatos(
+                        ClaseNodo.ACTIVIDAD,
+                        propietario,
+                        "Actividad HTTP",
+                        100,
+                        100,
+                        100,
+                        50,
+                        lane.id(),
+                        TipoActividad.TAREA,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null);
+        mvc.perform(
+                        post(raiz + "/nodos")
+                                .principal(editor::getCorreo)
+                                .contentType("application/json")
+                                .content(json.writeValueAsString(datos)))
+                .andExpect(status().isCreated());
+        NodoVista nodo =
+                nodos.listar(admin.getId(), proceso.getId()).stream()
+                        .filter(n -> n.nombre().equals("Actividad HTTP"))
+                        .findFirst()
+                        .orElseThrow();
+        mvc.perform(
+                        put(raiz + "/nodos/" + nodo.id())
+                                .principal(editor::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                datosNodo(nodo, "Actividad editada HTTP"))))
+                .andExpect(status().isOk());
+        NodoVista inicio =
+                detalle.nodos().stream()
+                        .filter(n -> n.tipoEvento() == TipoEvento.INICIO)
+                        .findFirst()
+                        .orElseThrow();
+        ArcoDatos conexion = new ArcoDatos(inicio.id(), nodo.id(), "HTTP", null);
+        mvc.perform(
+                        post(raiz + "/arcos")
+                                .principal(editor::getCorreo)
+                                .contentType("application/json")
+                                .content(json.writeValueAsString(conexion)))
+                .andExpect(status().isCreated());
+        Arco arco = arcoRepo.buscarPar(inicio.id(), nodo.id()).orElseThrow();
+        mvc.perform(
+                        put(raiz + "/arcos/" + arco.getId())
+                                .principal(editor::getCorreo)
+                                .contentType("application/json")
+                                .content(json.writeValueAsString(conexion)))
+                .andExpect(status().isOk());
+        mvc.perform(
+                        delete(raiz + "/arcos/" + arco.getId())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new Retirada(proceso.getVersion(), true))))
+                .andExpect(status().isOk());
+        mvc.perform(
+                        delete(raiz + "/nodos/" + nodo.id())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new Retirada(proceso.getVersion(), true))))
+                .andExpect(status().isOk());
+        mvc.perform(
+                        delete(rutaLanes + "/" + lane.id())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new Retirada(
+                                                        laneRepo.findById(lane.id())
+                                                                .orElseThrow()
+                                                                .getVersion(),
+                                                        true))))
                 .andExpect(status().isNoContent());
-        mvc.perform(delete(raiz + "/pools/" + pool.id()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new Retirada(pools.listar(admin.getId(), proceso.getId()).stream()
-                        .filter(p -> p.id().equals(pool.id())).findFirst().orElseThrow().version(), true))))
+        mvc.perform(
+                        delete(raiz + "/pools/" + pool.id())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new Retirada(
+                                                        pools
+                                                                .listar(
+                                                                        admin.getId(),
+                                                                        proceso.getId())
+                                                                .stream()
+                                                                .filter(
+                                                                        p ->
+                                                                                p.id().equals(
+                                                                                                pool
+                                                                                                        .id()))
+                                                                .findFirst()
+                                                                .orElseThrow()
+                                                                .version(),
+                                                        true))))
                 .andExpect(status().isNoContent());
-        mvc.perform(delete("/roles-proceso/" + rol.id()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(new Retirada(rolRepo.findById(rol.id()).orElseThrow().getVersion(), true))))
+        mvc.perform(
+                        delete("/roles-proceso/" + rol.id())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                new Retirada(
+                                                        rolRepo.findById(rol.id())
+                                                                .orElseThrow()
+                                                                .getVersion(),
+                                                        true))))
                 .andExpect(status().isNoContent());
     }
 
@@ -322,40 +747,92 @@ class EntregaBackendTest {
     void endpointsDanDetalleSinCredencialesYExigenSesion() throws Exception {
         mvc.perform(get("/procesos")).andExpect(status().isUnauthorized());
         mvc.perform(get("/procesos/" + proceso.getId() + "/diagrama").principal(admin::getCorreo))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.nodos.length()").value(7))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nodos.length()").value(7))
                 .andExpect(jsonPath("$.mensajes.length()").value(2));
         for (String ruta : List.of("/pools", "/nodos", "/arcos"))
-            mvc.perform(get("/procesos/" + proceso.getId() + ruta).principal(admin::getCorreo)).andExpect(status().isOk());
+            mvc.perform(get("/procesos/" + proceso.getId() + ruta).principal(admin::getCorreo))
+                    .andExpect(status().isOk());
         mvc.perform(get("/roles-proceso").principal(admin::getCorreo)).andExpect(status().isOk());
-        mvc.perform(get("/procesos/" + proceso.getId() + "/historial").principal(admin::getCorreo)).andExpect(status().isOk());
+        mvc.perform(get("/procesos/" + proceso.getId() + "/historial").principal(admin::getCorreo))
+                .andExpect(status().isOk());
     }
 
     @Test
     void validaDtosPorHttpYConectaLaEdicionConElServicio() throws Exception {
-        mvc.perform(post("/procesos").principal(admin::getCorreo).contentType("application/json").content("{}"))
+        mvc.perform(
+                        post("/procesos")
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content("{}"))
                 .andExpect(status().isBadRequest());
-        mvc.perform(put("/procesos/" + proceso.getId()).principal(editor::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(datosProceso(EstadoPublicacion.BORRADOR))))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(proceso.getId()));
-        mvc.perform(delete("/procesos/" + proceso.getId()).principal(admin::getCorreo).contentType("application/json")
-                .content(json.writeValueAsString(Map.of("version", proceso.getVersion(), "confirmar", false))))
+        mvc.perform(
+                        put("/procesos/" + proceso.getId())
+                                .principal(editor::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                datosProceso(EstadoPublicacion.BORRADOR))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(proceso.getId()));
+        mvc.perform(
+                        delete("/procesos/" + proceso.getId())
+                                .principal(admin::getCorreo)
+                                .contentType("application/json")
+                                .content(
+                                        json.writeValueAsString(
+                                                Map.of(
+                                                        "version",
+                                                        proceso.getVersion(),
+                                                        "confirmar",
+                                                        false))))
                 .andExpect(status().isBadRequest());
     }
 
     private Datos datosProceso(EstadoPublicacion estado) {
-        return new Datos(proceso.getNombre(), proceso.getDescripcion(), proceso.getCategoria(), estado, proceso.getVersion());
+        return new Datos(
+                proceso.getNombre(),
+                proceso.getDescripcion(),
+                proceso.getCategoria(),
+                estado,
+                proceso.getVersion());
     }
 
     private NodoVista tarea() {
-        return detalle.nodos().stream().filter(n -> n.tipoActividad() == TipoActividad.TAREA).findFirst().orElseThrow();
+        return detalle.nodos().stream()
+                .filter(n -> n.tipoActividad() == TipoActividad.TAREA)
+                .findFirst()
+                .orElseThrow();
     }
 
     private NodoDatos datosNodo(NodoVista n, String nombre) {
-        return new NodoDatos(n.clase(), n.poolId(), nombre, n.posicionX(), n.posicionY(), n.ancho(), n.alto(),
-                n.laneId(), n.tipoActividad(), n.tipoGateway(), n.direccionGateway(), n.tipoEvento(), n.naturalezaEvento(), n.operacionMensaje());
+        return new NodoDatos(
+                n.clase(),
+                n.poolId(),
+                nombre,
+                n.posicionX(),
+                n.posicionY(),
+                n.ancho(),
+                n.alto(),
+                n.laneId(),
+                n.tipoActividad(),
+                n.tipoGateway(),
+                n.direccionGateway(),
+                n.tipoEvento(),
+                n.naturalezaEvento(),
+                n.operacionMensaje());
     }
 
     private PoolDatos datosPool() {
-        return new PoolDatos("Otro participante", TipoParticipante.SISTEMA_EXTERNO, true, 0, 700, 300, 150, 3, null);
+        return new PoolDatos(
+                "Otro participante",
+                TipoParticipante.SISTEMA_EXTERNO,
+                true,
+                0,
+                700,
+                300,
+                150,
+                3,
+                null);
     }
 }

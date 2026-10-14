@@ -1,3 +1,6 @@
 package com.proyecto.inicio.entity.enums;
 
-public enum TipoActividad { TAREA, ENVIO }
+public enum TipoActividad {
+    TAREA,
+    ENVIO
+}

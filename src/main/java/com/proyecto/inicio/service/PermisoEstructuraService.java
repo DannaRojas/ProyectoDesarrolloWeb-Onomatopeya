@@ -1,14 +1,22 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.dto.PermisoEstructuraDto.PermisoEstructuraRequestDto;
-import com.proyecto.inicio.dto.PermisoEstructuraDto.PermisoEstructuraResponseDto;
-import com.proyecto.inicio.entity.*;
-import com.proyecto.inicio.entity.enums.*;
+import com.proyecto.inicio.dto.request.PermisoEstructuraRequestDto;
+import com.proyecto.inicio.dto.response.PermisoEstructuraResponseDto;
+import com.proyecto.inicio.entity.PermisoEstructura;
+import com.proyecto.inicio.entity.Proceso;
+import com.proyecto.inicio.entity.Usuario;
+import com.proyecto.inicio.entity.enums.AccionEstructura;
+import com.proyecto.inicio.entity.enums.AccionHistorial;
+import com.proyecto.inicio.entity.enums.RecursoEstructura;
+import com.proyecto.inicio.entity.enums.RolAcceso;
 import com.proyecto.inicio.exception.AccesoColaboracionException;
 import com.proyecto.inicio.repository.PermisoEstructuraRepository;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+
 import lombok.RequiredArgsConstructor;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,27 +25,48 @@ import org.springframework.validation.annotation.Validated;
 import java.util.List;
 import java.util.Objects;
 
-@Service @Validated @RequiredArgsConstructor
+@Service
+@Validated
+@RequiredArgsConstructor
 @Transactional
 public class PermisoEstructuraService {
     private final PermisoEstructuraRepository permisos;
     private final ContextoColaboracionService contexto;
     private final ModelMapper modelMapper;
 
-    public PermisoEstructuraResponseDto guardar(Long usuarioId, Long procesoId, @NotNull @Valid PermisoEstructuraRequestDto datos) {
+    public PermisoEstructuraResponseDto guardar(
+            Long usuarioId, Long procesoId, @NotNull @Valid PermisoEstructuraRequestDto datos) {
         Proceso proceso = contexto.proceso(usuarioId, procesoId, true, true);
         if (datos.getRolAcceso() == RolAcceso.LECTURA && Boolean.TRUE.equals(datos.getPermitido()))
-            throw new IllegalArgumentException("El rol de lectura nunca puede modificar la estructura.");
-        if (datos.getRolAcceso() == RolAcceso.ADMINISTRADOR && !Boolean.TRUE.equals(datos.getPermitido()))
-            throw new IllegalArgumentException("El administrador conserva la gestión de la estructura.");
-        PermisoEstructura permiso = permisos.buscarRegla(procesoId, datos.getRolAcceso(), datos.getRecurso(), datos.getAccion())
-                .orElseGet(PermisoEstructura::new);
+            throw new IllegalArgumentException(
+                    "El rol de lectura nunca puede modificar la estructura.");
+        if (datos.getRolAcceso() == RolAcceso.ADMINISTRADOR
+                && !Boolean.TRUE.equals(datos.getPermitido()))
+            throw new IllegalArgumentException(
+                    "El administrador conserva la gestión de la estructura.");
+        PermisoEstructura permiso =
+                permisos.buscarRegla(
+                                procesoId,
+                                datos.getRolAcceso(),
+                                datos.getRecurso(),
+                                datos.getAccion())
+                        .orElseGet(PermisoEstructura::new);
         if (permiso.getId() != null) contexto.version(datos.getVersion(), permiso.getVersion());
         modelMapper.map(datos, permiso);
         permiso.setProceso(proceso);
         permisos.saveAndFlush(permiso);
-        contexto.auditar(usuarioId, proceso, "PERMISO_ESTRUCTURA", permiso.getId(), AccionHistorial.ACTUALIZAR,
-                "Se configuró " + datos.getAccion() + " sobre " + datos.getRecurso() + " para " + datos.getRolAcceso());
+        contexto.auditar(
+                usuarioId,
+                proceso,
+                "PERMISO_ESTRUCTURA",
+                permiso.getId(),
+                AccionHistorial.ACTUALIZAR,
+                "Se configuró "
+                        + datos.getAccion()
+                        + " sobre "
+                        + datos.getRecurso()
+                        + " para "
+                        + datos.getRolAcceso());
         return respuesta(permiso);
     }
 
@@ -49,20 +78,25 @@ public class PermisoEstructuraService {
     }
 
     @Transactional(readOnly = true)
-    public boolean permitido(Long usuarioId, Long procesoId, RecursoEstructura recurso, AccionEstructura accion) {
-        if (recurso == null || accion == null) throw new IllegalArgumentException("Indica recurso y acción.");
+    public boolean permitido(
+            Long usuarioId, Long procesoId, RecursoEstructura recurso, AccionEstructura accion) {
+        if (recurso == null || accion == null)
+            throw new IllegalArgumentException("Indica recurso y acción.");
         Proceso proceso = contexto.proceso(usuarioId, procesoId, false, false);
         Usuario usuario = contexto.usuario(usuarioId);
-        if (!Objects.equals(usuario.getEmpresa().getId(), proceso.getEmpresa().getId()) || usuario.getRolAcceso() == RolAcceso.LECTURA)
-            return false;
+        if (!Objects.equals(usuario.getEmpresa().getId(), proceso.getEmpresa().getId())
+                || usuario.getRolAcceso() == RolAcceso.LECTURA) return false;
         if (usuario.getRolAcceso() == RolAcceso.ADMINISTRADOR) return true;
         return permisos.buscarRegla(procesoId, usuario.getRolAcceso(), recurso, accion)
-                .map(p -> Boolean.TRUE.equals(p.getPermitido())).orElse(false);
+                .map(p -> Boolean.TRUE.equals(p.getPermitido()))
+                .orElse(false);
     }
 
-    public void exigir(Long usuarioId, Long procesoId, RecursoEstructura recurso, AccionEstructura accion) {
+    public void exigir(
+            Long usuarioId, Long procesoId, RecursoEstructura recurso, AccionEstructura accion) {
         contexto.proceso(usuarioId, procesoId, true, false);
-        if (!permitido(usuarioId, procesoId, recurso, accion)) throw new AccesoColaboracionException();
+        if (!permitido(usuarioId, procesoId, recurso, accion))
+            throw new AccesoColaboracionException();
     }
 
     private PermisoEstructuraResponseDto respuesta(PermisoEstructura p) {

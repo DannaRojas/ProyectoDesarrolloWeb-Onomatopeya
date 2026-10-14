@@ -2,6 +2,7 @@ package com.proyecto.inicio.dto.response;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
 import java.time.OffsetDateTime;
 
 // El token se entrega solo al crear la invitación; no debe escribirse en logs.

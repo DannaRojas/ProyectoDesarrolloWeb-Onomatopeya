@@ -1,6 +1,7 @@
 package com.proyecto.inicio.dto.response;
 
 import com.proyecto.inicio.entity.enums.EstadoPublicacion;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

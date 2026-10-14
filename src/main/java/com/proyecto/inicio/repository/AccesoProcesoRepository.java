@@ -1,10 +1,15 @@
 package com.proyecto.inicio.repository;
 
 import com.proyecto.inicio.entity.AccesoProceso;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.Optional;
 
 public interface AccesoProcesoRepository extends JpaRepository<AccesoProceso, Long> {
-    Optional<AccesoProceso> findByProcesoIdAndEmpresaInvitadaId(Long procesoId, Long empresaInvitadaId);
-    Optional<AccesoProceso> findByProcesoIdAndEmpresaInvitadaIdAndActivoTrue(Long procesoId, Long empresaInvitadaId);
+    Optional<AccesoProceso> findByProcesoIdAndEmpresaInvitadaId(
+            Long procesoId, Long empresaInvitadaId);
+
+    Optional<AccesoProceso> findByProcesoIdAndEmpresaInvitadaIdAndActivoTrue(
+            Long procesoId, Long empresaInvitadaId);
 }

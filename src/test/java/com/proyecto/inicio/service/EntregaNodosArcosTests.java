@@ -1,19 +1,36 @@
 package com.proyecto.inicio.service;
 
-import com.proyecto.inicio.entity.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.proyecto.inicio.entity.Actividad;
+import com.proyecto.inicio.entity.Arco;
+import com.proyecto.inicio.entity.Gateway;
+import com.proyecto.inicio.entity.Nodo;
+import com.proyecto.inicio.entity.Pool;
+import com.proyecto.inicio.entity.Proceso;
 import com.proyecto.inicio.entity.enums.EstadoNodo;
-import com.proyecto.inicio.repository.*;
+import com.proyecto.inicio.repository.ActividadRepository;
+import com.proyecto.inicio.repository.ArcoRepository;
+import com.proyecto.inicio.repository.NodoRepository;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 class EntregaNodosArcosTests {
     private final NodoRepository nodoRepository = mock(NodoRepository.class);
     private final ArcoRepository arcoRepository = mock(ArcoRepository.class);
-    private final ArcoService arcoService = new ArcoService(nodoRepository, arcoRepository, null, null);
+    private final ArcoService arcoService =
+            new ArcoService(nodoRepository, arcoRepository, null, null);
 
     @Test
     void creaArcoValidoDentroDelMismoPool() {
@@ -45,14 +62,25 @@ class EntregaNodosArcosTests {
         when(nodoRepository.findById(100L)).thenReturn(java.util.Optional.of(origen));
         when(nodoRepository.findById(101L)).thenReturn(java.util.Optional.of(destino));
 
-        assertThrows(IllegalArgumentException.class, () -> arcoService.crear(100L, 101L, null, null));
+        assertThrows(
+                IllegalArgumentException.class, () -> arcoService.crear(100L, 101L, null, null));
         verify(arcoRepository, never()).save(any(Arco.class));
     }
 
     @Test
     void rechazaActividadSinLane() {
         ActividadRepository actividadRepository = mock(ActividadRepository.class);
-        NodoService nodoService = new NodoService(actividadRepository, nodoRepository, arcoRepository, null, null, null, null, null, null);
+        NodoService nodoService =
+                new NodoService(
+                        actividadRepository,
+                        nodoRepository,
+                        arcoRepository,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null);
         Actividad actividad = new Actividad();
         actividad.setProceso(proceso(1L));
         actividad.setPool(pool(10L, actividad.getProceso()));
@@ -65,7 +93,17 @@ class EntregaNodosArcosTests {
 
     @Test
     void guardaGatewayIncompletoComoBorrador() {
-        NodoService nodoService = new NodoService(mock(ActividadRepository.class), nodoRepository, arcoRepository, null, null, null, null, null, null);
+        NodoService nodoService =
+                new NodoService(
+                        mock(ActividadRepository.class),
+                        nodoRepository,
+                        arcoRepository,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null);
         Gateway gateway = new Gateway();
         gateway.setProceso(proceso(1L));
         gateway.setPool(pool(10L, gateway.getProceso()));

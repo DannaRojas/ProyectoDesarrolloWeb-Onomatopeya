@@ -1,5 +1,8 @@
 package com.proyecto.inicio.dto.request;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,10 +12,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class LaneRequestDto {
-
-    private Long poolId;
-    private Long rolProcesoId;
-    private Integer orden;
-    private Integer altura;
+public class UsoMensajeActividadRequestDto {
+    @NotNull
+    @Positive
+    private Long actividadId;
 }

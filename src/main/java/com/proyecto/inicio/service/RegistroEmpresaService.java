@@ -1,9 +1,9 @@
 package com.proyecto.inicio.service;
 
 import com.proyecto.inicio.dto.RegistroEmpresaDto;
-
+import com.proyecto.inicio.dto.request.Administrador;
 import com.proyecto.inicio.dto.response.EmpresaResponseDto;
-import com.proyecto.inicio.service.EmpresaService;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ public class RegistroEmpresaService {
     }
 
     public EmpresaResponseDto registrar(RegistroEmpresaDto registro) {
-        var admin = registro.administrador();
+        Administrador admin = registro.administrador();
         // El servicio existente recibe el hash y guarda ambos registros en su transacción.
         return empresaService.crearEmpresaConAdminInicial(
                 registro.empresa().alDtoExistente(), admin.nombre().strip(),

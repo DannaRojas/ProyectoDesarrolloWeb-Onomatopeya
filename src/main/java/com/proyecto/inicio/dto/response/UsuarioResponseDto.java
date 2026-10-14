@@ -2,9 +2,11 @@ package com.proyecto.inicio.dto.response;
 
 import com.proyecto.inicio.entity.enums.EstadoUsuario;
 import com.proyecto.inicio.entity.enums.RolAcceso;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.time.OffsetDateTime;
 
 @Getter

@@ -7,13 +7,15 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.time.OffsetDateTime;
-import jakarta.persistence.Version;
-import lombok.Builder;
 
 @Entity
 @Table(name = "empresa")
@@ -31,16 +33,17 @@ public class Empresa {
     @Column(nullable = false, length = 150)
     private String nombre;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 30)
     private String nit;
 
     @Column(name = "correo_contacto", nullable = false)
     private String correoContacto;
 
-    @Column (nullable = false)
-    private Boolean activo = true; 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean activo = true;
 
-    @Column (name = "fecha_creacion", nullable = false, updatable = false)
+    @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private OffsetDateTime fechaCreacion;
 
     @Version
@@ -48,7 +51,7 @@ public class Empresa {
 
     // Establecemos automaticamente la fecha y hora de la creacion del registro
     // antes de persistirlo en la base de datos
-    @PrePersist 
+    @PrePersist
     protected void onCreate() {
         if (fechaCreacion == null) {
             fechaCreacion = OffsetDateTime.now();

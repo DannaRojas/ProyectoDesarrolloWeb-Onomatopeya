@@ -1,16 +1,30 @@
 package com.proyecto.inicio.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(
         name = "lane",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_lane_pool_orden",
-                columnNames = {"pool_id", "orden"}
-        )
-)
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_lane_pool_orden",
+                        columnNames = {"pool_id", "orden"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,6 +50,7 @@ public class Lane {
     @Column(nullable = false)
     private Integer altura;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean activo = true;
 
