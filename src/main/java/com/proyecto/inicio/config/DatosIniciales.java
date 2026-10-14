@@ -50,8 +50,12 @@ import com.proyecto.inicio.service.ProcesoService;
 
 import lombok.RequiredArgsConstructor;
 
+import java.security.SecureRandom;
+import java.util.Base64;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,6 +78,8 @@ public class DatosIniciales implements CommandLineRunner {
     private final FlujoMensajeService flujoService;
     private final NodoRepository nodos;
     private final PasswordEncoder codificador;
+    private final Environment environment;
+    private final SecureRandom aleatorio = new SecureRandom();
 
     @Override
     @Transactional
@@ -341,8 +347,13 @@ public class DatosIniciales implements CommandLineRunner {
             }
             return existente;
         }
-        // Esta contraseña es únicamente para las cuentas ficticias de la demostración.
-        String hash = codificador.encode("DemoEntrega1!2026");
+        String clave = environment.getProperty("app.datos-demo.clave");
+        if (clave == null || clave.isBlank()) {
+            byte[] aleatoria = new byte[32];
+            aleatorio.nextBytes(aleatoria);
+            clave = Base64.getUrlEncoder().withoutPadding().encodeToString(aleatoria);
+        }
+        String hash = codificador.encode(clave);
         return usuarios.save(
                 Usuario.builder()
                         .empresa(empresa)

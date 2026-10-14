@@ -30,7 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
             "spring.datasource.password=",
             "spring.jpa.hibernate.ddl-auto=create-drop",
             "spring.jpa.properties.hibernate.hbm2ddl.halt_on_error=true",
-            "app.datos-demo=true"
+            "app.datos-demo=true",
+            "app.datos-demo.clave=ClaveTemporalDePrueba2026"
         })
 @Transactional
 class DatosInicialesTest {
@@ -109,10 +110,10 @@ class DatosInicialesTest {
         usuarios.findAll()
                 .forEach(
                         usuario -> {
-                            assertThat(usuario.getPasswordHash()).isNotEqualTo("DemoEntrega1!2026");
+                            assertThat(usuario.getPasswordHash()).isNotEqualTo("ClaveTemporalDePrueba2026");
                             assertThat(
                                             encoder.matches(
-                                                    "DemoEntrega1!2026", usuario.getPasswordHash()))
+                                                    "ClaveTemporalDePrueba2026", usuario.getPasswordHash()))
                                     .isTrue();
                         });
     }
