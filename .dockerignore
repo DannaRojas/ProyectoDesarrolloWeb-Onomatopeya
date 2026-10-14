@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+.idea
+.vscode
+target
+docs
+database
+postman
+jmeter
+*.zip

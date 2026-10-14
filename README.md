@@ -18,3 +18,9 @@ Antes de usar una base compartida, configurar `spring.jpa.hibernate.ddl-auto=val
 En Windows, ejecutar `mvnw.cmd clean verify`. Las pruebas automatizadas usan H2 en memoria y no modifican PostgreSQL. Con la aplicación en marcha, Swagger UI está en `/swagger-ui/index.html` y el documento OpenAPI en `/v3/api-docs`.
 
 La aplicación aún no implementa el inicio de sesión definitivo. Los endpoints que requieren usuario esperan un `Principal`; esto debe resolverse antes de usarlos desde el frontend con usuarios reales.
+
+## Docker local
+
+Crear un archivo `.env` a partir de `.env.example` y poner una contraseña solo para la base local. Después ejecutar `docker compose up --build`. El contenedor de PostgreSQL guarda sus datos en un volumen local y la API queda en `http://127.0.0.1:8080`; no usa la base de Laura. `docker compose down` detiene los contenedores sin borrar ese volumen.
+
+Este Compose cubre el backend y una base de prueba. El frontend Angular se integrará cuando exista su repositorio; por ahora no representa la solución completa de la segunda entrega.
