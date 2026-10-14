@@ -25,6 +25,10 @@ Ejecutar `postman/IniciarDemo.ps1` en PowerShell y dejar esa terminal abierta. L
 
 El plan `jmeter/Carga-API-local.jmx` hace tres cargas secuenciales de lectura sobre `/v3/api-docs`: 1, 10 y 30 usuarios. Se puede abrir en JMeter o ejecutar con `jmeter -n -t jmeter/Carga-API-local.jmx -l resultados.jtl`. Estas cargas no representan consultas a la base ni usuarios autenticados.
 
+## Análisis con SonarQube
+
+`mvnw.cmd clean verify` genera el informe de cobertura en `target/site/jacoco/jacoco.xml`. Con SonarQube disponible y `SONAR_TOKEN` configurado en la terminal, ejecutar `mvnw.cmd org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar -Dsonar.projectKey=onomatopeya -Dsonar.projectName=Onomatopeya -Dsonar.host.url=http://127.0.0.1:9000`. El token es personal y no debe guardarse en el repositorio.
+
 
 ## Docker local
 
