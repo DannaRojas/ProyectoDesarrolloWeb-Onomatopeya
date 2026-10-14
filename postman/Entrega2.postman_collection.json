@@ -1,0 +1,105 @@
+{
+  "info": {
+    "name": "Onomatopeya - Comprobacion local",
+    "description": "Peticiones publicas y rechazo sin sesion. El registro escribe solo en la instancia H2 aislada del puerto 8084.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8084" },
+    { "key": "nitDemo", "value": "" },
+    { "key": "correoDemo", "value": "" },
+    { "key": "claveDemo", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 - Documento OpenAPI",
+      "request": { "method": "GET", "url": "{{baseUrl}}/v3/api-docs" },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+          "pm.test('La ruta de empresas esta documentada', () => pm.expect(pm.response.json().paths).to.have.property('/empresas'));"
+        ] }
+      }]
+    },
+    {
+      "name": "02 - Swagger UI",
+      "request": { "method": "GET", "url": "{{baseUrl}}/swagger-ui/index.html" },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+          "pm.test('Carga la pagina de Swagger', () => pm.expect(pm.response.text().toLowerCase()).to.include('swagger'));"
+        ] }
+      }]
+    },
+    {
+      "name": "03 - Empresas exige sesion",
+      "request": { "method": "GET", "url": "{{baseUrl}}/empresas" },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('HTTP 401 sin usuario', () => pm.response.to.have.status(401));"
+        ] }
+      }]
+    },
+    {
+      "name": "04 - Registrar empresa",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/empresas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"empresa\":{\"nombre\":\"Empresa de prueba\",\"nit\":\"{{nitDemo}}\",\"correoContacto\":\"contacto@example.com\"},\"administrador\":{\"nombre\":\"Administrador de prueba\",\"correo\":\"{{correoDemo}}\",\"contrasena\":\"{{claveDemo}}\"}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": { "type": "text/javascript", "exec": [
+            "if (pm.collectionVariables.get('baseUrl') !== 'http://127.0.0.1:8084') throw new Error('El registro solo se permite en la demo local del puerto 8084.');",
+            "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);",
+            "pm.collectionVariables.set('nitDemo', 'T-' + id);",
+            "pm.collectionVariables.set('correoDemo', 'admin.' + id + '@example.com');",
+            "pm.collectionVariables.set('claveDemo', 'Prueba-' + id + '!');"
+          ] }
+        },
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+            "pm.test('Devuelve id y NIT', () => { const empresa = pm.response.json(); pm.expect(empresa.id).to.be.above(0); pm.expect(empresa.nit).to.eql(pm.collectionVariables.get('nitDemo')); });",
+            "pm.test('No devuelve la clave', () => pm.expect(pm.response.text()).not.to.include(pm.collectionVariables.get('claveDemo')));"
+          ] }
+        }
+      ]
+    },
+    {
+      "name": "05 - Rechazar NIT repetido",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/empresas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"empresa\":{\"nombre\":\"Empresa repetida\",\"nit\":\"{{nitDemo}}\",\"correoContacto\":\"contacto2@example.com\"},\"administrador\":{\"nombre\":\"Otro administrador\",\"correo\":\"otro.{{correoDemo}}\",\"contrasena\":\"{{claveDemo}}\"}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": { "type": "text/javascript", "exec": [
+            "if (pm.collectionVariables.get('baseUrl') !== 'http://127.0.0.1:8084') throw new Error('El registro solo se permite en la demo local del puerto 8084.');"
+          ] }
+        },
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "pm.test('HTTP 409 por NIT repetido', () => pm.response.to.have.status(409));"
+          ] }
+        }
+      ]
+    }
+  ]
+}
