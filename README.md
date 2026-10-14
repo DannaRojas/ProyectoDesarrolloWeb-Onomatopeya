@@ -23,7 +23,7 @@ La aplicación aún no implementa el inicio de sesión definitivo. Los endpoints
 
 Ejecutar `postman/IniciarDemo.ps1` en PowerShell y dejar esa terminal abierta. La demo usa H2 en memoria y el puerto 8084; no se conecta a PostgreSQL de Laura. Importar `postman/Entrega2.postman_collection.json` en Postman y ejecutar las cinco peticiones en orden. Se comprueban Swagger, el rechazo sin sesión, el registro y el NIT duplicado.
 
-El plan `jmeter/Carga-API-local.jmx` hace tres cargas secuenciales de lectura sobre `/v3/api-docs`: 1, 10 y 30 usuarios. Se puede abrir en JMeter o ejecutar con `jmeter -n -t jmeter/Carga-API-local.jmx -l resultados.jtl`. Estas cargas no representan consultas a la base ni usuarios autenticados.
+El plan `jmeter/Carga-API-local.jmx` hace tres cargas secuenciales de lectura sobre `/v3/api-docs`: 1, 10 y 30 usuarios. Usa el puerto 8084 de la demo H2 por defecto. Con Docker local en marcha se puede ejecutar `jmeter -n -t jmeter/Carga-API-local.jmx -Jport=8080 -l resultados-docker.jtl`. Estas cargas miden la documentación HTTP, no las consultas a la base ni usuarios autenticados.
 
 ## Análisis con SonarQube
 
