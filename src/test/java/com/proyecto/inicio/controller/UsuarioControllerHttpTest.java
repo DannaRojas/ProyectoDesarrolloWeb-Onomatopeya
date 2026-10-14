@@ -33,9 +33,9 @@ import java.util.UUID;
 @ActiveProfiles("conexion-empresa")
 @SpringBootTest(
         properties = {
-            "spring.datasource.url=jdbc:h2:mem:pruebas-http-usuarios;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-            "spring.datasource.username=sa",
-            "spring.datasource.password=",
+            "spring.datasource.url=jdbc:postgresql://127.0.0.1:5433/pruebas_http_usuarios",
+            "spring.datasource.username=gestor_pruebas",
+            "spring.datasource.password=${DB_PASSWORD}",
             "spring.jpa.hibernate.ddl-auto=create-drop",
             "spring.jpa.properties.hibernate.hbm2ddl.halt_on_error=true"
         })

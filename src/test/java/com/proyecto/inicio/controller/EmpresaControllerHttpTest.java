@@ -29,9 +29,9 @@ import java.util.UUID;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-            "spring.datasource.url=jdbc:h2:mem:pruebas-conexion;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-            "spring.datasource.username=sa",
-            "spring.datasource.password=",
+            "spring.datasource.url=jdbc:postgresql://127.0.0.1:5433/pruebas_conexion",
+            "spring.datasource.username=gestor_pruebas",
+            "spring.datasource.password=${DB_PASSWORD}",
             "spring.jpa.hibernate.ddl-auto=create-drop",
             "spring.jpa.properties.hibernate.hbm2ddl.halt_on_error=true"
         })

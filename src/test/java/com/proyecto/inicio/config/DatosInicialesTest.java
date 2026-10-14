@@ -25,9 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
         properties = {
-            "spring.datasource.url=jdbc:h2:mem:datos-iniciales;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-            "spring.datasource.username=sa",
-            "spring.datasource.password=",
+            "spring.datasource.url=jdbc:postgresql://127.0.0.1:5433/datos_iniciales",
+            "spring.datasource.username=gestor_pruebas",
+            "spring.datasource.password=${DB_PASSWORD}",
             "spring.jpa.hibernate.ddl-auto=create-drop",
             "spring.jpa.properties.hibernate.hbm2ddl.halt_on_error=true",
             "app.datos-demo=true",

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Onomatopeya - Comprobacion local",
-    "description": "Peticiones publicas y rechazo sin sesion. El registro escribe solo en la instancia H2 aislada del puerto 8084.",
+    "description": "Peticiones publicas y rechazo sin sesion. El registro escribe solo en la base PostgreSQL aislada demo_postman del puerto 8084.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

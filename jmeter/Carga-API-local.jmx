@@ -2,7 +2,7 @@
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Onomatopeya - API local" enabled="true">
-      <stringProp name="TestPlan.comments">Carga de lectura de OpenAPI. Usa el puerto 8084 por defecto; -Jport=8080 permite probar la API del Docker local. No mide operaciones con usuario autenticado.</stringProp>
+      <stringProp name="TestPlan.comments">Carga de lectura de OpenAPI. Usa el puerto 8084 de la demo PostgreSQL por defecto; -Jport=8080 permite probar la API del Docker local. No mide operaciones con usuario autenticado.</stringProp>
       <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
         <collectionProp name="Arguments.arguments"/>

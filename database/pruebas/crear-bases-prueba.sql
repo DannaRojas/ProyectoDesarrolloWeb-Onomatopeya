@@ -1,0 +1,10 @@
+CREATE DATABASE pruebas_contexto;
+CREATE DATABASE pruebas_web;
+CREATE DATABASE datos_iniciales;
+CREATE DATABASE entrega_backend;
+CREATE DATABASE pruebas_http_usuarios;
+CREATE DATABASE pruebas_invitacion_usuario;
+CREATE DATABASE pruebas_conexion;
+CREATE DATABASE pruebas_consulta_usuario;
+CREATE DATABASE pruebas_http_mensajes;
+CREATE DATABASE demo_postman;
