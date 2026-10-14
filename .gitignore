@@ -40,3 +40,5 @@ build/
 ### Archivos temporales ###
 .DS_Store
 ~$*
+jmeter.log
+*.jtl
