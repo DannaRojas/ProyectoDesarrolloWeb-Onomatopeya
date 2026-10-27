@@ -1,6 +1,7 @@
 package com.proyecto.inicio.service;
 
 import com.proyecto.inicio.repository.UsuarioRepository;
+import com.proyecto.inicio.entity.enums.EstadoUsuario;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +21,9 @@ public class UsuarioSesionService {
         if (principal == null)
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED, "Inicia sesión para continuar.");
-        return usuarios.findByCorreo(principal.getName())
+        return usuarios.buscarPorCorreoConEmpresa(principal.getName())
+                .filter(u -> u.getEstado() == EstadoUsuario.ACTIVO)
+                .filter(u -> Boolean.TRUE.equals(u.getEmpresa().getActivo()))
                 .map(u -> u.getId())
                 .orElseThrow(
                         () ->

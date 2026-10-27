@@ -1,6 +1,7 @@
 package com.proyecto.inicio.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.proyecto.inicio.entity.Usuario;
 import com.proyecto.inicio.entity.enums.EstadoUsuario;
@@ -13,6 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
 
 import tools.jackson.databind.ObjectMapper;
@@ -44,6 +48,10 @@ class EmpresaControllerHttpTest {
     private UsuarioRepository usuarios;
     @Autowired
     private PasswordEncoder codificador;
+    @Autowired
+    private AuthenticationManager autenticador;
+    @Autowired
+    private UserDetailsService detalles;
     private final ObjectMapper json = new ObjectMapper();
     private final HttpClient cliente = HttpClient.newHttpClient();
 
@@ -62,9 +70,15 @@ class EmpresaControllerHttpTest {
         assertThat(admin.getEstado()).isEqualTo(EstadoUsuario.ACTIVO);
         assertThat(admin.getPasswordHash()).isNotEqualTo("ClaveDePrueba123!");
         assertThat(codificador.matches("ClaveDePrueba123!", admin.getPasswordHash())).isTrue();
+        assertThat(detalles.loadUserByUsername(correo).getUsername()).isEqualTo(correo);
+        assertThatCode(() -> autenticador.authenticate(
+                new UsernamePasswordAuthenticationToken(correo, "ClaveDePrueba123!")))
+                .doesNotThrowAnyException();
         assertThat(empresas.findById(id).orElseThrow().getActivo()).isTrue();
         assertThat(enviar("GET", "/empresas/" + id, null).statusCode()).isEqualTo(401);
         assertThat(enviar("GET", "/empresas", null).statusCode()).isEqualTo(401);
+        assertThat(enviarAutorizado("GET", "/empresas/" + id, null, token(correo))
+                .statusCode()).isEqualTo(200);
 
         HttpResponse<String> cambio =
                 enviar(
@@ -120,14 +134,22 @@ class EmpresaControllerHttpTest {
 
     @Test
     void traduceIdInvalidoYEmpresaInexistente() throws Exception {
-        assertThat(enviar("GET", "/empresas/0", null).statusCode()).isEqualTo(400);
-        assertThat(enviar("GET", "/empresas/texto", null).statusCode()).isEqualTo(400);
-        assertThat(enviar("GET", "/empresas/999999999", null).statusCode()).isEqualTo(401);
+        String nit = UUID.randomUUID().toString().substring(0, 30);
+        String correo = nit + "@ejemplo.co";
+        assertThat(enviar("POST", "/empresas", registro(nit, correo)).statusCode()).isEqualTo(201);
+        String token = token(correo);
+        assertThat(enviarAutorizado("GET", "/empresas/0", null, token).statusCode()).isEqualTo(400);
+        assertThat(enviarAutorizado("GET", "/empresas/texto", null, token).statusCode()).isEqualTo(400);
+        assertThat(enviarAutorizado("GET", "/empresas/999999999", null, token).statusCode()).isEqualTo(403);
     }
 
     @Test
     void noExponeEliminacionDeEmpresas() throws Exception {
-        assertThat(enviar("DELETE", "/empresas/1", null).statusCode()).isEqualTo(405);
+        String nit = UUID.randomUUID().toString().substring(0, 30);
+        String correo = nit + "@ejemplo.co";
+        assertThat(enviar("POST", "/empresas", registro(nit, correo)).statusCode()).isEqualTo(201);
+        assertThat(enviarAutorizado("DELETE", "/empresas/1", null, token(correo))
+                .statusCode()).isEqualTo(405);
     }
 
     @Test
@@ -135,7 +157,15 @@ class EmpresaControllerHttpTest {
         HttpResponse<String> respuesta = enviar("GET", "/v3/api-docs", null);
         assertThat(respuesta.statusCode()).isEqualTo(200);
         assertThat(json.readTree(respuesta.body()).get("paths").has("/empresas")).isTrue();
-        assertThat(respuesta.body().split("\"summary\"", -1).length - 1).isEqualTo(59);
+        assertThat(respuesta.body().split("\"summary\"", -1).length - 1).isEqualTo(60);
+        assertThat(json.readTree(respuesta.body()).get("components").get("securitySchemes")
+                .has("bearerAuth")).isTrue();
+        assertThat(json.readTree(respuesta.body()).get("paths").get("/empresas").get("get")
+                .has("security")).isTrue();
+        assertThat(json.readTree(respuesta.body()).get("paths").get("/empresas").get("post")
+                .has("security")).isFalse();
+        assertThat(json.readTree(respuesta.body()).get("paths").get("/auth/login").get("post")
+                .get("description").asText()).contains("token Bearer");
     }
 
     @Test
@@ -156,6 +186,47 @@ class EmpresaControllerHttpTest {
                 registro(nit, correo.toUpperCase(java.util.Locale.ROOT))).statusCode())
                 .isEqualTo(409);
         assertThat(empresas.findByNit(nit)).isEmpty();
+    }
+
+    @Test
+    void loginRechazaClaveIncorrectaYUsuarioDesactivado() throws Exception {
+        String nit = UUID.randomUUID().toString().substring(0, 30);
+        String correo = nit + "@ejemplo.co";
+        assertThat(enviar("POST", "/empresas", registro(nit, correo)).statusCode()).isEqualTo(201);
+        assertThat(enviar("POST", "/auth/login", json.writeValueAsString(
+                Map.of("correo", correo, "contrasena", "incorrecta"))).statusCode())
+                .isEqualTo(401);
+        String token = token(correo);
+        assertThat(enviarAutorizado("GET", "/empresas", null, token).statusCode()).isEqualTo(200);
+        Usuario usuario = usuarios.findByCorreo(correo).orElseThrow();
+        usuario.setEstado(EstadoUsuario.INACTIVO);
+        usuarios.saveAndFlush(usuario);
+        assertThat(enviarAutorizado("GET", "/empresas", null, token).statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    void tokenNoPermiteConsultarUnaEmpresaAjena() throws Exception {
+        String nitPropio = UUID.randomUUID().toString().substring(0, 30);
+        String correoPropio = nitPropio + "@ejemplo.co";
+        assertThat(enviar("POST", "/empresas", registro(nitPropio, correoPropio)).statusCode())
+                .isEqualTo(201);
+        String nitAjeno = UUID.randomUUID().toString().substring(0, 30);
+        HttpResponse<String> ajena = enviar("POST", "/empresas",
+                registro(nitAjeno, nitAjeno + "@ejemplo.co"));
+        long idAjeno = json.readTree(ajena.body()).get("id").asLong();
+        assertThat(enviarAutorizado("GET", "/empresas/" + idAjeno, null,
+                token(correoPropio)).statusCode()).isEqualTo(403);
+        assertThat(enviarAutorizado("GET", "/empresas", null, "token-inventado")
+                .statusCode()).isEqualTo(401);
+    }
+
+    private String token(String correo) throws Exception {
+        HttpResponse<String> respuesta = enviar("POST", "/auth/login", json.writeValueAsString(
+                Map.of("correo", correo, "contrasena", "ClaveDePrueba123!")));
+        assertThat(respuesta.statusCode())
+                .withFailMessage("Login respondió %s: %s", respuesta.statusCode(), respuesta.body())
+                .isEqualTo(200);
+        return json.readTree(respuesta.body()).get("token").asText();
     }
 
     private String registro(String nit, String correo) {
@@ -185,16 +256,20 @@ class EmpresaControllerHttpTest {
 
     private HttpResponse<String> enviar(String metodo, String ruta, String cuerpo)
             throws Exception {
+        return enviarAutorizado(metodo, ruta, cuerpo, null);
+    }
+
+    private HttpResponse<String> enviarAutorizado(String metodo, String ruta, String cuerpo,
+            String token) throws Exception {
         HttpRequest.BodyPublisher contenido =
                 cuerpo == null
                         ? HttpRequest.BodyPublishers.noBody()
                         : HttpRequest.BodyPublishers.ofString(cuerpo);
-        return cliente.send(
-                HttpRequest.newBuilder(URI.create(base() + ruta))
-                        .timeout(Duration.ofSeconds(20))
-                        .header("Content-Type", "application/json")
-                        .method(metodo, contenido)
-                        .build(),
-                HttpResponse.BodyHandlers.ofString());
+        HttpRequest.Builder peticion = HttpRequest.newBuilder(URI.create(base() + ruta))
+                .timeout(Duration.ofSeconds(20))
+                .header("Content-Type", "application/json")
+                .method(metodo, contenido);
+        if (token != null) peticion.header("Authorization", "Bearer " + token);
+        return cliente.send(peticion.build(), HttpResponse.BodyHandlers.ofString());
     }
 }

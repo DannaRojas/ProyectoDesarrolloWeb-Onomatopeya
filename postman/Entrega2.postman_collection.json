@@ -1,14 +1,15 @@
 {
   "info": {
     "name": "Onomatopeya - Comprobacion local",
-    "description": "Peticiones publicas y rechazo sin sesion. El registro escribe solo en la base PostgreSQL aislada demo_postman del puerto 8084.",
+    "description": "Registro, login y consulta autenticada sobre la base PostgreSQL aislada demo_postman del puerto 8084.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://127.0.0.1:8084" },
     { "key": "nitDemo", "value": "" },
     { "key": "correoDemo", "value": "" },
-    { "key": "claveDemo", "value": "" }
+    { "key": "claveDemo", "value": "" },
+    { "key": "tokenDemo", "value": "" }
   ],
   "item": [
     {
@@ -76,7 +77,42 @@
       ]
     },
     {
-      "name": "05 - Rechazar NIT repetido",
+      "name": "05 - Iniciar sesión",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\":\"{{correoDemo}}\",\"contrasena\":\"{{claveDemo}}\"}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+          "if (pm.response.code === 200) pm.collectionVariables.set('tokenDemo', pm.response.json().token);",
+          "pm.test('Entrega token Bearer', () => pm.expect(pm.response.json().tipo).to.eql('Bearer'));"
+        ] }
+      }]
+    },
+    {
+      "name": "06 - Consultar empresa con token",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{tokenDemo}}" }],
+        "url": "{{baseUrl}}/empresas"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+          "pm.test('Solo aparece la empresa registrada', () => pm.expect(pm.response.json()[0].nit).to.eql(pm.collectionVariables.get('nitDemo')));"
+        ] }
+      }]
+    },
+    {
+      "name": "07 - Rechazar NIT repetido",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],

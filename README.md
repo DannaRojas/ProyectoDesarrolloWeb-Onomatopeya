@@ -26,11 +26,11 @@ Remove-Item Env:DB_PASSWORD
 
 El contenedor de pruebas escucha solo en `127.0.0.1:5433`; `create-drop` afecta únicamente las bases de ese contenedor. Con la aplicación en marcha, Swagger UI está en `/swagger-ui/index.html` y el documento OpenAPI en `/v3/api-docs`.
 
-La aplicación aún no implementa el inicio de sesión definitivo. Los endpoints que requieren usuario esperan un `Principal`; esto debe resolverse antes de usarlos desde el frontend con usuarios reales.
+`POST /auth/login` recibe correo y contraseña de un usuario activo y devuelve un token Bearer válido durante dos horas. Las demás rutas protegidas obtienen la identidad de ese token, no del cuerpo enviado por el cliente. Al desactivar un usuario, el token deja de servir aunque no haya vencido. `APP_JWT_SECRET` permite fijar una clave de al menos 32 bytes; si se omite, se genera una nueva al iniciar y los tokens anteriores dejan de funcionar después de reiniciar. Para un despliegue permanente, configurar esa clave fuera del repositorio y servir la API por HTTPS.
 
 ## Demostración de API
 
-Ejecutar `postman/IniciarDemo.ps1` en PowerShell y dejar esa terminal abierta. La demo usa la base PostgreSQL aislada `demo_postman` y el puerto 8084; no se conecta a PostgreSQL de Laura. Importar `postman/Entrega2.postman_collection.json` en Postman y ejecutar las cinco peticiones en orden. Se comprueban Swagger, el rechazo sin sesión, el registro y el NIT duplicado.
+Ejecutar `postman/IniciarDemo.ps1` en PowerShell y dejar esa terminal abierta. La demo usa la base PostgreSQL aislada `demo_postman` y el puerto 8084; no se conecta a PostgreSQL de Laura. Importar `postman/Entrega2.postman_collection.json` en Postman y ejecutar las siete peticiones en orden. Se comprueban Swagger, el rechazo sin sesión, el registro, el login, la consulta con token y el NIT duplicado. La colección antigua de mensajería usa el puerto 8080, requiere credenciales e IDs válidos y no se debe ejecutar completa contra una base compartida.
 
 El plan `jmeter/Carga-API-local.jmx` hace tres cargas secuenciales de lectura sobre `/v3/api-docs`: 1, 10 y 30 usuarios. Usa el puerto 8084 de la demo PostgreSQL por defecto. Con Docker local en marcha se puede ejecutar `jmeter -n -t jmeter/Carga-API-local.jmx -Jport=8080 -l resultados-docker.jtl`. Estas cargas miden la documentación HTTP, no las consultas a la base ni usuarios autenticados.
 

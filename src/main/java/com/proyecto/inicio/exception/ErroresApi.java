@@ -7,6 +7,7 @@ import com.proyecto.inicio.controller.MensajeController;
 import com.proyecto.inicio.controller.PermisoEstructuraController;
 import com.proyecto.inicio.controller.ProcesoController;
 import com.proyecto.inicio.controller.RolProcesoController;
+import com.proyecto.inicio.controller.SesionController;
 import com.proyecto.inicio.controller.UsuarioController;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -38,6 +39,7 @@ import java.util.LinkedHashMap;
             UsuarioController.class,
             ProcesoController.class,
             RolProcesoController.class,
+            SesionController.class,
             DiagramaController.class
         })
 @Profile("conexion-empresa")

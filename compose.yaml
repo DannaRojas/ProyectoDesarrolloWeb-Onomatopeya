@@ -38,6 +38,7 @@ services:
       DB_USERNAME: gestor_procesos
       DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en un archivo .env local}
       SERVER_ADDRESS: 0.0.0.0
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     ports:
       - "127.0.0.1:8080:8080"

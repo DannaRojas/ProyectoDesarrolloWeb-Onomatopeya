@@ -14,6 +14,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByCorreo(String correo);
 
+    @Query("select u from Usuario u join fetch u.empresa where u.correo = :correo")
+    Optional<Usuario> buscarPorCorreoConEmpresa(@Param("correo") String correo);
+
     @Query("select case when count(u) > 0 then true else false end from Usuario u where lower(trim(u.correo)) = :correo")
     boolean existeCorreoNormalizado(@Param("correo") String correo);
 
