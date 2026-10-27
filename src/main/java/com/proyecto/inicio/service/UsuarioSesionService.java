@@ -7,10 +7,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.security.Principal;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class UsuarioSesionService {
     private final UsuarioRepository usuarios;

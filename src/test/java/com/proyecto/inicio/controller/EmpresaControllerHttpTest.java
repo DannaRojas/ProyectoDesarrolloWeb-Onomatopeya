@@ -218,6 +218,38 @@ class EmpresaControllerHttpTest {
                 .statusCode()).isEqualTo(401);
     }
 
+    @Test
+    void laSesionPermiteListarSoloLosProcesosDeSuEmpresa() throws Exception {
+        String nit = UUID.randomUUID().toString().substring(0, 30);
+        String correo = nit + "@ejemplo.co";
+        assertThat(enviar("POST", "/empresas", registro(nit, correo)).statusCode()).isEqualTo(201);
+        assertThat(enviar("GET", "/procesos", null).statusCode()).isEqualTo(401);
+
+        String sesion = token(correo);
+        HttpResponse<String> proceso = enviarAutorizado("POST", "/procesos",
+                json.writeValueAsString(Map.of("nombre", "Compras " + nit,
+                        "estadoPublicacion", "BORRADOR")), sesion);
+        assertThat(proceso.statusCode()).withFailMessage(proceso.body()).isEqualTo(201);
+
+        String nitAjeno = UUID.randomUUID().toString().substring(0, 30);
+        String correoAjeno = nitAjeno + "@ejemplo.co";
+        assertThat(enviar("POST", "/empresas", registro(nitAjeno, correoAjeno)).statusCode())
+                .isEqualTo(201);
+        String sesionAjena = token(correoAjeno);
+        HttpResponse<String> procesoAjeno = enviarAutorizado("POST", "/procesos",
+                json.writeValueAsString(Map.of("nombre", "Ventas " + nitAjeno,
+                        "estadoPublicacion", "BORRADOR")), sesionAjena);
+        assertThat(procesoAjeno.statusCode()).withFailMessage(procesoAjeno.body()).isEqualTo(201);
+
+        HttpResponse<String> listado = enviarAutorizado("GET", "/procesos", null, sesion);
+        assertThat(listado.statusCode()).withFailMessage(listado.body()).isEqualTo(200);
+        assertThat(listado.body()).contains("Compras " + nit).doesNotContain("Ventas " + nitAjeno);
+
+        HttpResponse<String> listadoAjeno = enviarAutorizado("GET", "/procesos", null, sesionAjena);
+        assertThat(listadoAjeno.statusCode()).withFailMessage(listadoAjeno.body()).isEqualTo(200);
+        assertThat(listadoAjeno.body()).contains("Ventas " + nitAjeno).doesNotContain("Compras " + nit);
+    }
+
     private String token(String correo) throws Exception {
         HttpResponse<String> respuesta = enviar("POST", "/auth/login", json.writeValueAsString(
                 Map.of("correo", correo, "contrasena", "ClaveDePrueba123!")));
