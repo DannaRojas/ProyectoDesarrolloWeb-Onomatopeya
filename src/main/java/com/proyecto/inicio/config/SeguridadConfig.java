@@ -1,15 +1,19 @@
 package com.proyecto.inicio.config;
 
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.proyecto.inicio.entity.enums.EstadoUsuario;
 import com.proyecto.inicio.repository.UsuarioRepository;
 
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
-
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Locale;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -30,34 +34,34 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.Locale;
-
 @Configuration
 @Profile("conexion-empresa")
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class SeguridadConfig {
     @Bean
     SecurityFilterChain filtros(HttpSecurity http) throws Exception {
-        return http.csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sesion -> sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(sesion ->
+                        sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rutas -> rutas
-                        .requestMatchers(HttpMethod.POST, "/auth/login", "/empresas",
-                                "/usuarios/invitaciones/aceptar").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/auth/login",
+                                "/empresas",
+                                "/usuarios/invitaciones/aceptar")
+                        .permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                         .permitAll()
-                        .anyRequest().authenticated())
+                        .anyRequest()
+                        .authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))
                 .build();
     }
 
     @Bean
     UserDetailsService usuariosAutenticables(UsuarioRepository usuarios) {
-        return correo -> usuarios.buscarPorCorreoConEmpresa(correo.strip().toLowerCase(Locale.ROOT))
+        return correo -> usuarios
+                .buscarPorCorreoConEmpresa(correo.strip().toLowerCase(Locale.ROOT))
                 .filter(usuario -> usuario.getEstado() == EstadoUsuario.ACTIVO)
                 .filter(usuario -> Boolean.TRUE.equals(usuario.getEmpresa().getActivo()))
                 .filter(usuario -> usuario.getPasswordHash() != null
@@ -70,8 +74,8 @@ public class SeguridadConfig {
     }
 
     @Bean
-    AuthenticationManager autenticador(UserDetailsService usuariosAutenticables,
-            PasswordEncoder codificador) {
+    AuthenticationManager autenticador(
+            UserDetailsService usuariosAutenticables, PasswordEncoder codificador) {
         DaoAuthenticationProvider proveedor = new DaoAuthenticationProvider(usuariosAutenticables);
         proveedor.setPasswordEncoder(codificador);
         return new ProviderManager(proveedor);
@@ -99,8 +103,10 @@ public class SeguridadConfig {
 
     @Bean
     JwtDecoder verificador(SecretKey claveJwt) {
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(claveJwt)
-                .macAlgorithm(MacAlgorithm.HS256).build();
+        NimbusJwtDecoder decoder = NimbusJwtDecoder
+                .withSecretKey(claveJwt)
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
         decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer("onomatopeya"));
         return decoder;
     }

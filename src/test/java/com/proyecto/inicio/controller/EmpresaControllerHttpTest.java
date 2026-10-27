@@ -9,18 +9,6 @@ import com.proyecto.inicio.entity.enums.RolAcceso;
 import com.proyecto.inicio.repository.EmpresaRepository;
 import com.proyecto.inicio.repository.UsuarioRepository;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.test.context.ActiveProfiles;
-
-import tools.jackson.databind.ObjectMapper;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -28,6 +16,17 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+
+import tools.jackson.databind.ObjectMapper;
 
 @ActiveProfiles("conexion-empresa")
 @SpringBootTest(
@@ -42,16 +41,22 @@ import java.util.UUID;
 class EmpresaControllerHttpTest {
     @LocalServerPort
     private int puerto;
+
     @Autowired
     private EmpresaRepository empresas;
+
     @Autowired
     private UsuarioRepository usuarios;
+
     @Autowired
     private PasswordEncoder codificador;
+
     @Autowired
     private AuthenticationManager autenticador;
+
     @Autowired
     private UserDetailsService detalles;
+
     private final ObjectMapper json = new ObjectMapper();
     private final HttpClient cliente = HttpClient.newHttpClient();
 
@@ -80,18 +85,12 @@ class EmpresaControllerHttpTest {
         assertThat(enviarAutorizado("GET", "/empresas/" + id, null, token(correo))
                 .statusCode()).isEqualTo(200);
 
-        HttpResponse<String> cambio =
-                enviar(
-                        "PUT",
-                        "/empresas/" + id,
-                        json.writeValueAsString(
-                                Map.of(
-                                        "nombre",
-                                        "Nombre actualizado",
-                                        "nit",
-                                        nit,
-                                        "correoContacto",
-                                        "contacto@ejemplo.co")));
+        Map<String, String> datosCambio = Map.of(
+                "nombre", "Nombre actualizado",
+                "nit", nit,
+                "correoContacto", "contacto@ejemplo.co");
+        HttpResponse<String> cambio = enviar(
+                "PUT", "/empresas/" + id, json.writeValueAsString(datosCambio));
         assertThat(cambio.statusCode()).isEqualTo(401);
         assertThat(empresas.findById(id).orElseThrow().getNombre()).isEqualTo("Empresa prueba");
     }
@@ -116,14 +115,13 @@ class EmpresaControllerHttpTest {
     @Test
     void validaEmpresaYAdministradorAntesDeGuardar() throws Exception {
         long total = empresas.count();
-        HttpResponse<String> respuesta =
-                enviar(
-                        "POST",
-                        "/empresas",
-                        """
-                        {"empresa":{"nombre":" ","nit":"1","correoContacto":"incorrecto"},
-                         "administrador":{"nombre":"","correo":"incorrecto","contrasena":"123"}}
-                        """);
+        HttpResponse<String> respuesta = enviar(
+                "POST",
+                "/empresas",
+                """
+                {"empresa":{"nombre":" ","nit":"1","correoContacto":"incorrecto"},
+                 "administrador":{"nombre":"","correo":"incorrecto","contrasena":"123"}}
+                """);
         assertThat(respuesta.statusCode()).isEqualTo(400);
         assertThat(json.readTree(respuesta.body()).get("campos").has("administrador.contrasena"))
                 .isTrue();
@@ -230,24 +228,17 @@ class EmpresaControllerHttpTest {
     }
 
     private String registro(String nit, String correo) {
-        return json.writeValueAsString(
-                Map.of(
-                        "empresa",
-                                Map.of(
-                                        "nombre",
-                                        "Empresa prueba",
-                                        "nit",
-                                        nit,
-                                        "correoContacto",
-                                        "contacto@ejemplo.co"),
-                        "administrador",
-                                Map.of(
-                                        "nombre",
-                                        "Admin prueba",
-                                        "correo",
-                                        correo,
-                                        "contrasena",
-                                        "ClaveDePrueba123!")));
+        Map<String, String> empresa = Map.of(
+                "nombre", "Empresa prueba",
+                "nit", nit,
+                "correoContacto", "contacto@ejemplo.co");
+        Map<String, String> administrador = Map.of(
+                "nombre", "Admin prueba",
+                "correo", correo,
+                "contrasena", "ClaveDePrueba123!");
+        return json.writeValueAsString(Map.of(
+                "empresa", empresa,
+                "administrador", administrador));
     }
 
     private String base() {
@@ -261,15 +252,16 @@ class EmpresaControllerHttpTest {
 
     private HttpResponse<String> enviarAutorizado(String metodo, String ruta, String cuerpo,
             String token) throws Exception {
-        HttpRequest.BodyPublisher contenido =
-                cuerpo == null
-                        ? HttpRequest.BodyPublishers.noBody()
-                        : HttpRequest.BodyPublishers.ofString(cuerpo);
+        HttpRequest.BodyPublisher contenido = cuerpo == null
+                ? HttpRequest.BodyPublishers.noBody()
+                : HttpRequest.BodyPublishers.ofString(cuerpo);
         HttpRequest.Builder peticion = HttpRequest.newBuilder(URI.create(base() + ruta))
                 .timeout(Duration.ofSeconds(20))
                 .header("Content-Type", "application/json")
                 .method(metodo, contenido);
-        if (token != null) peticion.header("Authorization", "Bearer " + token);
+        if (token != null) {
+            peticion.header("Authorization", "Bearer " + token);
+        }
         return cliente.send(peticion.build(), HttpResponse.BodyHandlers.ofString());
     }
 }
