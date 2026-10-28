@@ -1,0 +1,10 @@
+# Use this workspace to collaborate
+workspace:
+  id: f01f7bee-2157-4521-89f5-9a895bec46cc
+
+localResources:
+  collections:
+    - ../ProyectoDesarrolloWeb-Onomatopeya/postman/Onomatopeya - Mensajes de
+      Sebastián
+  specs:
+    - ../evidencias/openapi.json

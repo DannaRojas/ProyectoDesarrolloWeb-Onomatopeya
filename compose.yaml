@@ -1,0 +1,68 @@
+services:
+  db_pruebas:
+    image: postgres:14-alpine
+    profiles: ["pruebas"]
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: gestor_pruebas
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en un archivo .env local}
+    volumes:
+      - datos_postgres_pruebas:/var/lib/postgresql/data
+      - ./database/pruebas/crear-bases-prueba.sql:/docker-entrypoint-initdb.d/crear-bases-prueba.sql:ro
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gestor_pruebas -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: gestion_procesos
+      POSTGRES_USER: gestor_procesos
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en un archivo .env local}
+    volumes:
+      - datos_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gestor_procesos -d gestion_procesos"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build: 
+      context: ./ProyectoDesarrolloWeb-Onomatopeya
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: conexion-empresa
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      APP_DATOS_DEMO: "true"
+      DB_URL: jdbc:postgresql://db:5432/gestion_procesos
+      DB_USERNAME: gestor_procesos
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en un archivo .env local}
+      SERVER_ADDRESS: 0.0.0.0
+      APP_PORT: 8080
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+  frontend:
+    build:
+      context: ../ui-WebOnomatopeya/ui-onomatopeya
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:4200:80"
+    depends_on:
+      - api
+
+volumes:
+  datos_postgres:
+  datos_postgres_pruebas:
+
+
+
+
