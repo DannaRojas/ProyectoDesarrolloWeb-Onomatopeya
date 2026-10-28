@@ -631,7 +631,7 @@ class EntregaBackendTest {
                         propietario,
                         "Actividad HTTP",
                         100,
-                        100,
+                        400,
                         100,
                         50,
                         lane.id(),
@@ -796,6 +796,92 @@ class EntregaBackendTest {
                 proceso.getCategoria(),
                 estado,
                 proceso.getVersion());
+    }
+
+    @Test
+    void rechazaNodoQueSobresaleDelPool() {
+        NodoVista tarea = tarea();
+        NodoDatos fuera = new NodoDatos(tarea.clase(), tarea.poolId(), "Fuera del pool",
+                990, 80, 100, 60, tarea.laneId(), tarea.tipoActividad(), null, null, null, null, null);
+        assertThatThrownBy(() -> nodos.crear(admin.getId(), proceso.getId(), fuera))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("dentro del pool");
+    }
+
+    @Test
+    void rechazaActividadFueraDeSuLane() {
+        NodoVista tarea = tarea();
+        NodoDatos fuera = new NodoDatos(tarea.clase(), tarea.poolId(), "Fuera de lane",
+                100, 290, 100, 60, tarea.laneId(), tarea.tipoActividad(), null, null, null, null, null);
+        assertThatThrownBy(() -> nodos.crear(admin.getId(), proceso.getId(), fuera))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("dentro de su lane");
+    }
+
+    @Test
+    void cambiarLaneMueveLaActividadYConservaSusArcos() {
+        NodoVista tarea = tarea();
+        LaneVista original = detalle.lanes().get(0);
+        LaneVista destino = lanes.crear(admin.getId(), proceso.getId(), tarea.poolId(),
+                new LaneDatos(original.rolProcesoId(), 2, 200, null));
+        List<Long> conexiones = arcoRepo.conectados(tarea.id()).stream().map(Arco::getId).toList();
+        NodoDatos mover = new NodoDatos(tarea.clase(), tarea.poolId(), tarea.nombre(),
+                tarea.posicionX(), tarea.posicionY(), tarea.ancho(), tarea.alto(), destino.id(),
+                tarea.tipoActividad(), null, null, null, null, null);
+        NodoVista movida = nodos.actualizar(editor.getId(), proceso.getId(), tarea.id(), mover);
+        assertThat(movida.laneId()).isEqualTo(destino.id());
+        assertThat(movida.posicionY()).isEqualTo(original.altura()
+                + Math.min(tarea.posicionY(), destino.altura() - tarea.alto()));
+        assertThat(arcoRepo.conectados(tarea.id())).extracting(Arco::getId)
+                .containsExactlyElementsOf(conexiones);
+    }
+
+    @Test
+    void reordenarLanesMueveLasActividadesConSuBanda() {
+        NodoVista tarea = tarea();
+        LaneVista original = detalle.lanes().get(0);
+        LaneVista segunda = lanes.crear(admin.getId(), proceso.getId(), tarea.poolId(),
+                new LaneDatos(original.rolProcesoId(), 2, 200, null));
+        lanes.reordenar(admin.getId(), proceso.getId(), tarea.poolId(), new Reordenar(List.of(
+                new OrdenLane(segunda.id(), segunda.version()),
+                new OrdenLane(original.id(), original.version()))));
+        assertThat(nodoRepo.findById(tarea.id()).orElseThrow().getPosicionY())
+                .isEqualTo(tarea.posicionY() + segunda.altura());
+    }
+
+    @Test
+    void reducirLaneAjustaLaPosicionSinSacarLaActividad() {
+        NodoVista tarea = tarea();
+        LaneVista lane = detalle.lanes().get(0);
+        lanes.actualizar(admin.getId(), proceso.getId(), lane.poolId(), lane.id(),
+                new LaneDatos(lane.rolProcesoId(), lane.orden(), 100, lane.version()));
+        var ajustada = nodoRepo.findById(tarea.id()).orElseThrow();
+        assertThat(ajustada.getPosicionY() + ajustada.getAlto()).isLessThanOrEqualTo(100);
+    }
+
+    @Test
+    void noReduceLaneSiLaActividadNoCabe() {
+        LaneVista lane = detalle.lanes().get(0);
+        assertThatThrownBy(() -> lanes.actualizar(admin.getId(), proceso.getId(), lane.poolId(),
+                lane.id(), new LaneDatos(lane.rolProcesoId(), lane.orden(), 1, lane.version())))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("no cabe");
+    }
+
+    @Test
+    void noReducePoolPorDebajoDeLosNodos() {
+        PoolVista pool = detalle.pools().stream().filter(PoolVista::propietario).findFirst().orElseThrow();
+        assertThatThrownBy(() -> pools.actualizar(admin.getId(), proceso.getId(), pool.id(),
+                new PoolDatos(pool.nombre(), pool.tipoParticipante(), false,
+                        pool.posicionX(), pool.posicionY(), 100, pool.alto(), pool.orden(), pool.version())))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("dentro del pool");
+    }
+
+    @Test
+    void sesionDevuelveIdentidadSinCredenciales() throws Exception {
+        mvc.perform(get("/auth/sesion").principal(lector::getCorreo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(lector.getId()))
+                .andExpect(jsonPath("$.rolAcceso").value("LECTURA"))
+                .andExpect(jsonPath("$.passwordHash").doesNotExist())
+                .andExpect(jsonPath("$.password").doesNotExist());
     }
 
     private NodoVista tarea() {

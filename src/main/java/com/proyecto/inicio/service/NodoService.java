@@ -54,6 +54,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class NodoService {
     private final ActividadRepository actividadRepository;
+    private final GeometriaDiagramaService geometria;
     private final NodoRepository nodoRepository;
     private final ArcoRepository arcoRepository;
     private final ContextoColaboracionService contexto;
@@ -130,6 +131,8 @@ public class NodoService {
         Pool pool = contexto.pool(datos.poolId(), nodo.getProceso().getId());
         if (Boolean.TRUE.equals(pool.getCajaNegra()))
             throw new IllegalArgumentException("Una caja negra no admite nodos.");
+        Lane laneAnterior = nodo instanceof Actividad actividad ? actividad.getLane() : null;
+        Integer yAnterior = nodo.getPosicionY();
         nodo.setPool(pool);
         nodo.setNombre(datos.nombre().strip());
         nodo.setPosicionX(datos.posicionX());
@@ -146,6 +149,11 @@ public class NodoService {
                                     () ->
                                             new EntityNotFoundException(
                                                     "Lane activa no encontrada en el pool."));
+            if (laneAnterior != null && !laneAnterior.getId().equals(lane.getId())
+                    && Objects.equals(datos.posicionY(), yAnterior)) {
+                int inicioAnterior = geometria.posiciones(laneAnterior.getPool()).get(laneAnterior.getId());
+                nodo.setPosicionY(geometria.trasladar(yAnterior, inicioAnterior, lane, datos.alto()));
+            }
             actividad.setLane(lane);
             actividad.setTipo(datos.tipoActividad());
             guardarActividad(actividad);
@@ -161,6 +169,7 @@ public class NodoService {
             evento.setOperacionMensaje(datos.operacionMensaje());
             guardarEvento(evento);
         }
+        geometria.validarNodo(nodo);
     }
 
     @Transactional

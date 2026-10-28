@@ -155,7 +155,9 @@ class EmpresaControllerHttpTest {
         HttpResponse<String> respuesta = enviar("GET", "/v3/api-docs", null);
         assertThat(respuesta.statusCode()).isEqualTo(200);
         assertThat(json.readTree(respuesta.body()).get("paths").has("/empresas")).isTrue();
-        assertThat(respuesta.body().split("\"summary\"", -1).length - 1).isEqualTo(60);
+        assertThat(json.readTree(respuesta.body()).get("paths").get("/auth/sesion").get("get")
+                .has("security")).isTrue();
+        assertThat(respuesta.body().split("\"summary\"", -1).length - 1).isEqualTo(61);
         assertThat(json.readTree(respuesta.body()).get("components").get("securitySchemes")
                 .has("bearerAuth")).isTrue();
         assertThat(json.readTree(respuesta.body()).get("paths").get("/empresas").get("get")

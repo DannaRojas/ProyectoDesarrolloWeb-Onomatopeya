@@ -38,6 +38,7 @@ import java.util.List;
 public class PoolService {
 
     private final PoolRepository poolRepository;
+    private final GeometriaDiagramaService geometria;
     private final LaneRepository laneRepository;
     private final NodoRepository nodos;
     private final FlujoMensajeRepository flujos;
@@ -112,6 +113,7 @@ public class PoolService {
         pool.setAncho(datos.ancho());
         pool.setAlto(datos.alto());
         pool.setOrden(datos.orden());
+        geometria.validarPool(pool);
         poolRepository.saveAndFlush(pool);
         contexto.auditar(
                 actorId,

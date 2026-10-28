@@ -74,6 +74,7 @@ class EntregaNodosArcosTests {
         NodoService nodoService =
                 new NodoService(
                         actividadRepository,
+                        null,
                         nodoRepository,
                         arcoRepository,
                         null,
@@ -97,6 +98,7 @@ class EntregaNodosArcosTests {
         NodoService nodoService =
                 new NodoService(
                         mock(ActividadRepository.class),
+                        null,
                         nodoRepository,
                         arcoRepository,
                         null,

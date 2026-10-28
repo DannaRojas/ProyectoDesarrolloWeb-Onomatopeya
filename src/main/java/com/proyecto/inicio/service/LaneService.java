@@ -37,6 +37,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class LaneService {
     private final LaneRepository laneRepository;
+    private final GeometriaDiagramaService geometria;
     private final RolProcesoRepository rolProcesoRepository;
     private final ActividadRepository actividades;
     private final ContextoColaboracionService contexto;
@@ -55,6 +56,7 @@ public class LaneService {
         permisos.exigir(actorId, procesoId, RecursoEstructura.LANE, AccionEstructura.CREAR);
         Pool pool = contexto.pool(poolId, procesoId);
         validarPool(pool);
+        Map<Long, Integer> posicionesAnteriores = geometria.posiciones(pool);
         RolProceso rol = validarRol(pool, datos.rolProcesoId());
         if (laneRepository.listarTodas(poolId).stream()
                 .anyMatch(l -> Objects.equals(l.getOrden(), datos.orden())))
@@ -67,6 +69,7 @@ public class LaneService {
                         .altura(datos.altura())
                         .activo(true)
                         .build());
+        geometria.ajustarLanes(pool, posicionesAnteriores);
         contexto.auditar(
                 actorId,
                 pool.getProceso(),
@@ -92,6 +95,7 @@ public class LaneService {
         permisos.exigir(actorId, procesoId, RecursoEstructura.LANE, AccionEstructura.EDITAR);
         Pool pool = contexto.pool(poolId, procesoId);
         validarPool(pool);
+        Map<Long, Integer> posicionesAnteriores = geometria.posiciones(pool);
         Lane lane = buscar(laneId, poolId);
         contexto.version(datos.version(), lane.getVersion());
         if (laneRepository.listarTodas(poolId).stream()
@@ -104,6 +108,7 @@ public class LaneService {
         lane.setOrden(datos.orden());
         lane.setAltura(datos.altura());
         laneRepository.saveAndFlush(lane);
+        geometria.ajustarLanes(pool, posicionesAnteriores);
         contexto.auditar(
                 actorId,
                 pool.getProceso(),
@@ -128,10 +133,12 @@ public class LaneService {
             @Valid Retirada datos) {
         permisos.exigir(actorId, procesoId, RecursoEstructura.LANE, AccionEstructura.RETIRAR);
         Pool pool = contexto.pool(poolId, procesoId);
+        Map<Long, Integer> posicionesAnteriores = geometria.posiciones(pool);
         Lane lane = buscar(laneId, poolId);
         contexto.version(datos.version(), lane.getVersion());
         contexto.confirmar(Boolean.TRUE.equals(datos.confirmar()));
         retirar(laneId, poolId);
+        geometria.ajustarLanes(pool, posicionesAnteriores);
         contexto.auditar(
                 actorId,
                 pool.getProceso(),
@@ -154,6 +161,7 @@ public class LaneService {
         permisos.exigir(actorId, procesoId, RecursoEstructura.LANE, AccionEstructura.EDITAR);
         Pool pool = contexto.pool(poolId, procesoId);
         validarPool(pool);
+        Map<Long, Integer> posicionesAnteriores = geometria.posiciones(pool);
         List<Lane> actuales = laneRepository.findByPoolIdAndActivoTrueOrderByOrden(poolId);
         Map<Long, Lane> porId = new LinkedHashMap<>();
         actuales.forEach(l -> porId.put(l.getId(), l));
@@ -176,6 +184,7 @@ public class LaneService {
             lane.setOrden(posiciones.get(i));
             laneRepository.saveAndFlush(lane);
         }
+        geometria.ajustarLanes(pool, posicionesAnteriores);
         contexto.auditar(
                 actorId,
                 pool.getProceso(),
