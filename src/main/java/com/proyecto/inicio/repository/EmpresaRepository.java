@@ -2,7 +2,10 @@ package com.proyecto.inicio.repository;
 
 import com.proyecto.inicio.entity.Empresa;
 
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,4 +21,8 @@ public interface EmpresaRepository extends JpaRepository<Empresa, Long> {
 
     @Query("select e from Empresa e where e.activo = :activo order by e.id")
     List<Empresa> buscarPorEstado(@Param("activo") boolean activo);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from Empresa e where e.id = :id")
+    Optional<Empresa> bloquear(@Param("id") Long id);
 }

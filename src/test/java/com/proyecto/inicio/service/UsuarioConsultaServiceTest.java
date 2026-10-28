@@ -203,6 +203,38 @@ class UsuarioConsultaServiceTest {
     }
 
     @Test
+    void noPermiteCambiarElRolDelUnicoAdministrador() {
+        Usuario admin = administrador();
+        assertThatThrownBy(() -> servicio.cambiarRol(admin.getId(), admin.getId(),
+                new CambiarRol(RolAcceso.EDITOR, admin.getVersion())))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("La empresa debe conservar un administrador activo.");
+        assertThat(admin.getRolAcceso()).isEqualTo(RolAcceso.ADMINISTRADOR);
+    }
+
+    @Test
+    void noPermiteDesactivarAlUnicoAdministrador() {
+        Usuario admin = administrador();
+        assertThatThrownBy(() -> servicio.desactivar(admin.getId(), admin.getId(),
+                new Desactivar(admin.getVersion(), true)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("La empresa debe conservar un administrador activo.");
+        assertThat(admin.getEstado()).isEqualTo(EstadoUsuario.ACTIVO);
+    }
+
+    @Test
+    void permiteCambiarElRolCuandoHayOtroAdministradorActivo() {
+        Usuario primero = administrador();
+        Usuario segundo = crearUsuario(empresa, "Segundo administrador", EstadoUsuario.ACTIVO);
+        segundo.setRolAcceso(RolAcceso.ADMINISTRADOR);
+        em.flush();
+        UsuarioResponseDto resultado = servicio.cambiarRol(primero.getId(), primero.getId(),
+                new CambiarRol(RolAcceso.EDITOR, primero.getVersion()));
+        assertThat(resultado.getRolAcceso()).isEqualTo(RolAcceso.EDITOR);
+        assertThat(segundo.getRolAcceso()).isEqualTo(RolAcceso.ADMINISTRADOR);
+    }
+
+    @Test
     void desactivarConservaProcesoEHistorialDelUsuario() {
         Usuario admin = administrador();
         Usuario usuario = crearUsuario(empresa, "Creador", EstadoUsuario.ACTIVO);

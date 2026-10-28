@@ -10,6 +10,7 @@ import com.proyecto.inicio.entity.enums.EstadoUsuario;
 import com.proyecto.inicio.entity.enums.RolAcceso;
 import com.proyecto.inicio.entity.enums.TipoActor;
 import com.proyecto.inicio.exception.AccesoColaboracionException;
+import com.proyecto.inicio.repository.EmpresaRepository;
 import com.proyecto.inicio.repository.HistorialCambioRepository;
 import com.proyecto.inicio.repository.UsuarioRepository;
 
@@ -33,6 +34,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UsuarioService {
     private final UsuarioRepository usuarios;
+    private final EmpresaRepository empresaRepositorio;
     private final EmpresaService empresas;
     private final ModelMapper modelMapper;
     private final ContextoColaboracionService contexto;
@@ -56,7 +58,7 @@ public class UsuarioService {
             @Positive Long usuarioId,
             @NotNull
             @Valid CambiarRol datos) {
-        Usuario admin = administrador(actorId);
+        Usuario admin = administradorBloqueado(actorId);
         Usuario usuario = usuarioDeEmpresa(admin, usuarioId);
         contexto.version(datos.version(), usuario.getVersion());
         if (usuario.getEstado() == EstadoUsuario.INACTIVO) {
@@ -64,6 +66,7 @@ public class UsuarioService {
                     "No se puede cambiar el rol de un usuario inactivo.");
         }
         if (usuario.getRolAcceso() != datos.rolAcceso()) {
+            conservarAdministrador(usuario, datos.rolAcceso() == RolAcceso.ADMINISTRADOR);
             RolAcceso anterior = usuario.getRolAcceso();
             usuario.setRolAcceso(datos.rolAcceso());
             usuarios.saveAndFlush(usuario);
@@ -84,13 +87,14 @@ public class UsuarioService {
             @Positive Long usuarioId,
             @NotNull
             @Valid Desactivar datos) {
-        Usuario admin = administrador(actorId);
+        Usuario admin = administradorBloqueado(actorId);
         Usuario usuario = usuarioDeEmpresa(admin, usuarioId);
         contexto.version(datos.version(), usuario.getVersion());
         contexto.confirmar(Boolean.TRUE.equals(datos.confirmar()));
         if (usuario.getEstado() == EstadoUsuario.INACTIVO) {
             throw new IllegalStateException("El usuario ya está inactivo.");
         }
+        conservarAdministrador(usuario, false);
         usuario.setEstado(EstadoUsuario.INACTIVO);
         usuario.setTokenInvitacionHash(null);
         usuario.setInvitacionExpiraEn(null);
@@ -99,11 +103,26 @@ public class UsuarioService {
         return modelMapper.map(usuario, UsuarioResponseDto.class);
     }
 
-    private Usuario administrador(Long actorId) {
+    private Usuario administradorBloqueado(Long actorId) {
+        Long empresaId = usuarios.empresaIdDeUsuario(actorId)
+                .orElseThrow(AccesoColaboracionException::new);
+        empresaRepositorio.bloquear(empresaId)
+                .orElseThrow(AccesoColaboracionException::new);
         Usuario admin = contexto.usuario(actorId);
         if (admin.getRolAcceso() != RolAcceso.ADMINISTRADOR)
             throw new AccesoColaboracionException();
         return admin;
+    }
+
+    private void conservarAdministrador(Usuario usuario, boolean seguiraSiendoAdministrador) {
+        if (usuario.getRolAcceso() == RolAcceso.ADMINISTRADOR
+                && usuario.getEstado() == EstadoUsuario.ACTIVO
+                && !seguiraSiendoAdministrador
+                && usuarios.contarPorEmpresaEstadoYRol(
+                        usuario.getEmpresa().getId(), EstadoUsuario.ACTIVO,
+                        RolAcceso.ADMINISTRADOR) <= 1) {
+            throw new IllegalStateException("La empresa debe conservar un administrador activo.");
+        }
     }
 
     private Usuario usuarioDeEmpresa(Usuario admin, Long usuarioId) {

@@ -1,6 +1,8 @@
 package com.proyecto.inicio.repository;
 
 import com.proyecto.inicio.entity.Usuario;
+import com.proyecto.inicio.entity.enums.EstadoUsuario;
+import com.proyecto.inicio.entity.enums.RolAcceso;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,4 +34,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query("select u from Usuario u join fetch u.empresa where u.empresa.id = :empresaId and u.id = :usuarioId")
     Optional<Usuario> buscarEnEmpresa(
             @Param("empresaId") Long empresaId, @Param("usuarioId") Long usuarioId);
+
+    @Query("select u.empresa.id from Usuario u where u.id = :usuarioId")
+    Optional<Long> empresaIdDeUsuario(@Param("usuarioId") Long usuarioId);
+
+    @Query("select count(u) from Usuario u where u.empresa.id = :empresaId and u.estado = :estado and u.rolAcceso = :rol")
+    long contarPorEmpresaEstadoYRol(
+            @Param("empresaId") Long empresaId,
+            @Param("estado") EstadoUsuario estado,
+            @Param("rol") RolAcceso rol);
 }
