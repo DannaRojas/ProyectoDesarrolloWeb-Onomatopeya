@@ -32,12 +32,12 @@ build/
 ### VS Code ###
 .vscode/
 
-### Credenciales locales ###
+# Variables de entorno y credenciales
 .env
 .env.*
 !.env.example
 
-### Archivos temporales ###
+# Archivos temporales
 .DS_Store
 ~$*
 jmeter.log
