@@ -2,12 +2,28 @@
   "info": {
     "name": "Onomatopeya - Mensajes de Sebastián",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Peticiones de mensajes y permisos. Requieren datos y sesión válidos. No ejecutar el runner sobre la base compartida sin autorización."
+    "description": "Peticiones de mensajes y permisos. Primero inicia sesión, completa los IDs de prueba y usa únicamente una base autorizada. No ejecutar el runner sobre la base compartida sin autorización."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://127.0.0.1:8081"
+      "value": "http://127.0.0.1:8080"
+    },
+    {
+      "key": "correo",
+      "value": ""
+    },
+    {
+      "key": "contrasena",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
     },
     {
       "key": "procesoId",
@@ -47,6 +63,26 @@
     }
   ],
   "item": [
+    {
+      "name": "Iniciar sesión",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\":\"{{correo}}\",\"contrasena\":\"{{contrasena}}\"}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Login HTTP 200', () => pm.response.to.have.status(200));",
+          "if (pm.response.code === 200) pm.collectionVariables.set('token', pm.response.json().token);"
+        ] }
+      }]
+    },
     {
       "name": "Secuencia en datos de prueba autorizados",
       "item": [

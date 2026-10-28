@@ -35,7 +35,7 @@ public class PermisoEstructuraController {
     private final PermisoEstructuraService servicio;
     private final UsuarioSesionService sesion;
 
-    @Operation(summary = "Configurar un permiso de estructura")
+    @Operation(summary = "Configurar un permiso de estructura", description = "Define si un rol puede realizar una acción sobre pools o lanes del proceso.")
     @PutMapping
     public PermisoEstructuraResponseDto guardar(
             Principal principal,
@@ -46,14 +46,14 @@ public class PermisoEstructuraController {
         return servicio.guardar(sesion.id(principal), procesoId, datos);
     }
 
-    @Operation(summary = "Listar permisos de estructura")
+    @Operation(summary = "Listar permisos de estructura", description = "Consulta la configuración de permisos de estructura del proceso accesible.")
     @GetMapping
     public List<PermisoEstructuraResponseDto> listar(
             Principal principal, @PathVariable @Positive Long procesoId) {
         return servicio.listar(sesion.id(principal), procesoId);
     }
 
-    @Operation(summary = "Verificar un permiso de estructura")
+    @Operation(summary = "Verificar un permiso de estructura", description = "Indica si el usuario actual puede realizar la acción solicitada sobre el recurso indicado.")
     @GetMapping("/verificar")
     public Map<String, Boolean> verificar(
             Principal principal,

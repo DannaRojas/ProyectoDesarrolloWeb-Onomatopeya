@@ -1,6 +1,7 @@
 package com.proyecto.inicio.repository;
 
 import com.proyecto.inicio.entity.Nodo;
+import com.proyecto.inicio.entity.enums.EstadoNodo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -23,5 +24,5 @@ public interface NodoRepository extends JpaRepository<Nodo, Long> {
             Long id,
             Long procesoId,
             Long poolId,
-            com.proyecto.inicio.entity.enums.EstadoNodo estado);
+            EstadoNodo estado);
 }

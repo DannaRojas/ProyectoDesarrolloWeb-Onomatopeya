@@ -1,0 +1,14 @@
+services:
+  api:
+    build: .
+    environment:
+      DB_URL: jdbc:postgresql://host.docker.internal:55432/gestion_procesos
+      DB_USERNAME: gestor_procesos
+      DB_PASSWORD: ${LAURA_DB_PASSWORD:?Define LAURA_DB_PASSWORD en tu entorno local}
+      SERVER_ADDRESS: 0.0.0.0
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: "false"
+      APP_DATOS_DEMO: "false"
+    ports:
+      - "127.0.0.1:8085:8080"

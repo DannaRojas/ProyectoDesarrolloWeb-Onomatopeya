@@ -39,7 +39,7 @@ public class RolProcesoController {
     private final RolProcesoService roles;
     private final UsuarioSesionService sesion;
 
-    @Operation(summary = "Buscar roles de proceso")
+    @Operation(summary = "Buscar roles de proceso", description = "Busca por nombre los roles de proceso de la empresa actual y devuelve resultados paginados.")
     @GetMapping
     public PaginaRoles buscar(
             Principal principal,
@@ -52,14 +52,14 @@ public class RolProcesoController {
         return roles.buscar(sesion.id(principal), nombre, pagina, tamanio);
     }
 
-    @Operation(summary = "Crear un rol de proceso")
+    @Operation(summary = "Crear un rol de proceso", description = "Crea un rol de proceso con nombre único dentro de la empresa del usuario.")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public RolVista crear(Principal principal, @Valid @RequestBody RolDatos datos) {
         return roles.crear(sesion.id(principal), datos);
     }
 
-    @Operation(summary = "Actualizar un rol de proceso")
+    @Operation(summary = "Actualizar un rol de proceso", description = "Edita un rol de proceso vigente comprobando permisos, nombre y versión.")
     @PutMapping("/{id}")
     public RolVista actualizar(
             Principal principal,
@@ -70,7 +70,7 @@ public class RolProcesoController {
         return roles.actualizar(sesion.id(principal), id, datos);
     }
 
-    @Operation(summary = "Desactivar un rol de proceso")
+    @Operation(summary = "Desactivar un rol de proceso", description = "Retira lógicamente el rol cuando sus relaciones permiten hacerlo y se confirma la operación.")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void retirar(

@@ -42,7 +42,7 @@ public class EmpresaController {
         this.sesion = sesion;
     }
 
-    @Operation(summary = "Registrar empresa y administrador inicial")
+    @Operation(summary = "Registrar empresa y administrador inicial", description = "Crea la empresa y su primer usuario administrador en una sola transacción. El NIT y el correo del administrador deben ser únicos.")
     @PostMapping
     public ResponseEntity<EmpresaResponseDto> registrar(
             @Valid
@@ -56,19 +56,19 @@ public class EmpresaController {
         return ResponseEntity.created(ubicacion).body(empresa);
     }
 
-    @Operation(summary = "Consultar la empresa del usuario")
+    @Operation(summary = "Consultar la empresa del usuario", description = "Devuelve únicamente la empresa a la que pertenece el usuario autenticado.")
     @GetMapping
     public List<EmpresaResponseDto> listar(Principal principal) {
         return empresaService.consultarParaUsuario(sesion.id(principal));
     }
 
-    @Operation(summary = "Consultar una empresa propia")
+    @Operation(summary = "Consultar una empresa propia", description = "Consulta por ID la empresa del usuario autenticado; no permite leer empresas ajenas.")
     @GetMapping("/{id}")
     public EmpresaResponseDto consultar(Principal principal, @Positive @PathVariable Long id) {
         return empresaService.consultarParaUsuario(sesion.id(principal), id);
     }
 
-    @Operation(summary = "Actualizar una empresa propia")
+    @Operation(summary = "Actualizar una empresa propia", description = "Modifica los datos de la empresa propia después de validar el rol de administrador y la unicidad del NIT.")
     @PutMapping("/{id}")
     public EmpresaResponseDto actualizar(
             Principal principal, @Positive

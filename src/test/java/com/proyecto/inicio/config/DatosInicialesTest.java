@@ -15,6 +15,7 @@ import com.proyecto.inicio.repository.PoolRepository;
 import com.proyecto.inicio.repository.ProcesoRepository;
 import com.proyecto.inicio.repository.RolProcesoRepository;
 import com.proyecto.inicio.repository.UsuarioRepository;
+import com.proyecto.inicio.service.DiagramaService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +48,7 @@ class DatosInicialesTest {
     @Autowired MensajeRepository mensajes;
     @Autowired CampoMensajeRepository campos;
     @Autowired FlujoMensajeRepository flujos;
-    @Autowired com.proyecto.inicio.service.DiagramaService diagramas;
+    @Autowired DiagramaService diagramas;
 
     @Test
     void preparaDosEmpresasConUsuariosYProcesosSeparados() {

@@ -47,13 +47,13 @@ public class ProcesoController {
     private final UsuarioSesionService sesion;
     private final DiagramaService diagramas;
 
-    @Operation(summary = "Consultar el diagrama completo")
+    @Operation(summary = "Consultar el diagrama completo", description = "Reúne los elementos vigentes del diagrama de un proceso accesible para el usuario.")
     @GetMapping("/{id}/diagrama")
     public Detalle diagrama(Principal principal, @Positive @PathVariable Long id) {
         return diagramas.consultar(sesion.id(principal), id);
     }
 
-    @Operation(summary = "Buscar procesos con filtros y paginación")
+    @Operation(summary = "Buscar procesos con filtros y paginación", description = "Filtra por nombre, categoría, publicación y estado activo; devuelve una página de procesos visibles para el usuario.")
     @GetMapping
     public Pagina buscar(
             Principal principal,
@@ -70,27 +70,27 @@ public class ProcesoController {
                 sesion.id(principal), nombre, categoria, estado, activo, pagina, tamanio);
     }
 
-    @Operation(summary = "Consultar un proceso")
+    @Operation(summary = "Consultar un proceso", description = "Muestra la ficha de un proceso propio o compartido para consulta, sin cambiar su empresa propietaria.")
     @GetMapping("/{id}")
     public Ficha consultar(Principal principal, @Positive @PathVariable Long id) {
         return procesos.consultar(sesion.id(principal), id);
     }
 
-    @Operation(summary = "Crear un proceso en borrador")
+    @Operation(summary = "Crear un proceso en borrador", description = "Crea un proceso de la empresa actual y su pool propietario; el diagrama puede completarse después.")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Ficha crear(Principal principal, @Valid @RequestBody Datos datos) {
         return procesos.crear(sesion.id(principal), datos);
     }
 
-    @Operation(summary = "Actualizar un proceso")
+    @Operation(summary = "Actualizar un proceso", description = "Edita los datos del proceso tras validar acceso, nombre único dentro de la empresa y versión vigente.")
     @PutMapping("/{id}")
     public Ficha actualizar(
             Principal principal, @Positive @PathVariable Long id, @Valid @RequestBody Datos datos) {
         return procesos.actualizar(sesion.id(principal), id, datos);
     }
 
-    @Operation(summary = "Desactivar un proceso")
+    @Operation(summary = "Desactivar un proceso", description = "Retira lógicamente el proceso con confirmación; conserva los registros e historial asociados.")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void retirar(
@@ -102,13 +102,13 @@ public class ProcesoController {
         procesos.retirar(sesion.id(principal), id, datos);
     }
 
-    @Operation(summary = "Consultar el historial de un proceso")
+    @Operation(summary = "Consultar el historial de un proceso", description = "Lista los cambios registrados para un proceso que el usuario puede consultar.")
     @GetMapping("/{id}/historial")
     public List<Cambio> historial(Principal principal, @Positive @PathVariable Long id) {
         return procesos.historial(sesion.id(principal), id);
     }
 
-    @Operation(summary = "Compartir un proceso para consulta")
+    @Operation(summary = "Compartir un proceso para consulta", description = "Concede a otra empresa acceso de solo lectura, sin transferir la propiedad del proceso.")
     @PutMapping("/{id}/comparticion")
     public Acceso compartir(
             Principal principal,

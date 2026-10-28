@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.proyecto.inicio.dto.request.CampoMensajeRequestDto;
 import com.proyecto.inicio.dto.request.FlujoMensajeRequestDto;
 import com.proyecto.inicio.dto.request.MensajeRequestDto;
+import com.proyecto.inicio.dto.request.NodoDatos;
 import com.proyecto.inicio.dto.request.PermisoEstructuraRequestDto;
 import com.proyecto.inicio.dto.request.UsoMensajeActividadRequestDto;
 import com.proyecto.inicio.dto.response.CampoMensajeResponseDto;
@@ -23,6 +24,7 @@ import com.proyecto.inicio.entity.Proceso;
 import com.proyecto.inicio.entity.RolProceso;
 import com.proyecto.inicio.entity.Usuario;
 import com.proyecto.inicio.entity.enums.AccionEstructura;
+import com.proyecto.inicio.entity.enums.ClaseNodo;
 import com.proyecto.inicio.entity.enums.EstadoUsuario;
 import com.proyecto.inicio.entity.enums.NaturalezaEvento;
 import com.proyecto.inicio.entity.enums.OperacionEventoMensaje;
@@ -442,9 +444,9 @@ class MensajeriaServiceTest {
     @Test
     void recepcionActivaNoPuedeConvertirseEnEventoFinal() {
         crear(recepcion, SentidoMensaje.RECEPCION);
-        com.proyecto.inicio.dto.request.NodoDatos datos =
-                new com.proyecto.inicio.dto.request.NodoDatos(
-                        com.proyecto.inicio.entity.enums.ClaseNodo.EVENTO,
+        NodoDatos datos =
+                new NodoDatos(
+                        ClaseNodo.EVENTO,
                         destino.getId(), "Recepción", 10, 10, 100, 60,
                         null, null, null, null, TipoEvento.FIN,
                         NaturalezaEvento.MENSAJE, OperacionEventoMensaje.RECEPCION);

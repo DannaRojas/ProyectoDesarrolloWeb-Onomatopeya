@@ -40,7 +40,7 @@ public class MensajeController {
     private final MensajeService servicio;
     private final UsuarioSesionService sesion;
 
-    @Operation(summary = "Definir un mensaje")
+    @Operation(summary = "Definir un mensaje", description = "Asocia una definición de mensaje a un nodo del proceso sin enviar comunicaciones reales.")
     @PostMapping
     public ResponseEntity<MensajeResponseDto> crear(
             Principal principal,
@@ -52,14 +52,14 @@ public class MensajeController {
                 .body(servicio.crear(sesion.id(principal), procesoId, datos));
     }
 
-    @Operation(summary = "Listar mensajes del proceso")
+    @Operation(summary = "Listar mensajes del proceso", description = "Consulta las definiciones de mensajes vigentes de un proceso accesible.")
     @GetMapping
     public List<MensajeResponseDto> listar(
             Principal principal, @PathVariable @Positive Long procesoId) {
         return servicio.listar(sesion.id(principal), procesoId);
     }
 
-    @Operation(summary = "Actualizar un mensaje")
+    @Operation(summary = "Actualizar un mensaje", description = "Edita el sentido y la correlación de un mensaje validando sus referencias y versión.")
     @PutMapping("/{id}")
     public MensajeResponseDto actualizar(
             Principal principal,
@@ -72,7 +72,7 @@ public class MensajeController {
         return servicio.actualizar(sesion.id(principal), procesoId, id, datos);
     }
 
-    @Operation(summary = "Retirar un mensaje")
+    @Operation(summary = "Retirar un mensaje", description = "Retira lógicamente una definición de mensaje tras validar versión y confirmación.")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> retirar(
             Principal principal,
@@ -87,13 +87,13 @@ public class MensajeController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Consultar advertencias de mensajería")
+    @Operation(summary = "Consultar advertencias de mensajería", description = "Identifica configuraciones incompletas o ambiguas en los mensajes del proceso.")
     @GetMapping("/advertencias")
     public List<String> advertencias(Principal principal, @PathVariable @Positive Long procesoId) {
         return servicio.advertencias(sesion.id(principal), procesoId);
     }
 
-    @Operation(summary = "Agregar un campo al mensaje")
+    @Operation(summary = "Agregar un campo al mensaje", description = "Define un campo con nombre, tipo y orden dentro del mensaje indicado.")
     @PostMapping("/{mensajeId}/campos")
     public ResponseEntity<CampoMensajeResponseDto> crearCampo(
             Principal principal,
@@ -107,7 +107,7 @@ public class MensajeController {
                 .body(servicio.crearCampo(sesion.id(principal), procesoId, mensajeId, datos));
     }
 
-    @Operation(summary = "Listar campos del mensaje")
+    @Operation(summary = "Listar campos del mensaje", description = "Muestra los campos vigentes que forman la estructura del mensaje.")
     @GetMapping("/{mensajeId}/campos")
     public List<CampoMensajeResponseDto> listarCampos(
             Principal principal,
@@ -118,7 +118,7 @@ public class MensajeController {
         return servicio.listarCampos(sesion.id(principal), procesoId, mensajeId);
     }
 
-    @Operation(summary = "Actualizar un campo del mensaje")
+    @Operation(summary = "Actualizar un campo del mensaje", description = "Edita un campo del mensaje después de verificar referencias y versión.")
     @PutMapping("/{mensajeId}/campos/{id}")
     public CampoMensajeResponseDto actualizarCampo(
             Principal principal,
@@ -133,7 +133,7 @@ public class MensajeController {
         return servicio.actualizarCampo(sesion.id(principal), procesoId, mensajeId, id, datos);
     }
 
-    @Operation(summary = "Retirar un campo del mensaje")
+    @Operation(summary = "Retirar un campo del mensaje", description = "Retira lógicamente un campo solo cuando su uso en correlaciones lo permite.")
     @DeleteMapping("/{mensajeId}/campos/{id}")
     public ResponseEntity<Void> retirarCampo(
             Principal principal,
@@ -150,7 +150,7 @@ public class MensajeController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Vincular una actividad a un mensaje recibido")
+    @Operation(summary = "Vincular una actividad a un mensaje recibido", description = "Indica qué actividad del proceso utiliza un mensaje de recepción.")
     @PostMapping("/{mensajeId}/usos")
     public ResponseEntity<UsoMensajeActividadResponseDto> crearUso(
             Principal principal,
@@ -164,7 +164,7 @@ public class MensajeController {
                 .body(servicio.crearUso(sesion.id(principal), procesoId, mensajeId, datos));
     }
 
-    @Operation(summary = "Listar actividades vinculadas al mensaje")
+    @Operation(summary = "Listar actividades vinculadas al mensaje", description = "Consulta los usos vigentes de un mensaje en actividades del proceso.")
     @GetMapping("/{mensajeId}/usos")
     public List<UsoMensajeActividadResponseDto> listarUsos(
             Principal principal,
@@ -175,7 +175,7 @@ public class MensajeController {
         return servicio.listarUsos(sesion.id(principal), procesoId, mensajeId);
     }
 
-    @Operation(summary = "Retirar el uso de un mensaje")
+    @Operation(summary = "Retirar el uso de un mensaje", description = "Desactiva el vínculo entre una actividad y un mensaje con control de versión.")
     @DeleteMapping("/{mensajeId}/usos/{id}")
     public ResponseEntity<Void> retirarUso(
             Principal principal,

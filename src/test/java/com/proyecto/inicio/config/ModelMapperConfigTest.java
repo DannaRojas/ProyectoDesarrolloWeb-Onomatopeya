@@ -31,15 +31,15 @@ import com.proyecto.inicio.entity.enums.TipoCorrelacion;
 import com.proyecto.inicio.entity.enums.TipoDatoMensaje;
 import com.proyecto.inicio.entity.enums.TipoDestinoExterno;
 
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
 
 class ModelMapperConfigTest {
-    static ModelMapper mapper;
+    private ModelMapper mapper;
 
-    @BeforeAll
-    static void configurar() {
+    @BeforeEach
+    void configurar() {
         mapper = new Configuracion().modelMapper();
     }
 

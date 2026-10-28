@@ -36,7 +36,7 @@ public class FlujoMensajeController {
     private final FlujoMensajeService servicio;
     private final UsuarioSesionService sesion;
 
-    @Operation(summary = "Crear un flujo de mensaje")
+    @Operation(summary = "Crear un flujo de mensaje", description = "Conecta participantes del proceso mediante una relación de mensaje validada; no envía mensajes reales.")
     @PostMapping
     public ResponseEntity<FlujoMensajeResponseDto> crear(
             Principal principal,
@@ -48,14 +48,14 @@ public class FlujoMensajeController {
                 .body(servicio.crear(sesion.id(principal), procesoId, datos));
     }
 
-    @Operation(summary = "Listar flujos de mensaje")
+    @Operation(summary = "Listar flujos de mensaje", description = "Devuelve los flujos de mensaje vigentes de un proceso que el usuario puede consultar.")
     @GetMapping
     public List<FlujoMensajeResponseDto> listar(
             Principal principal, @PathVariable @Positive Long procesoId) {
         return servicio.listar(sesion.id(principal), procesoId);
     }
 
-    @Operation(summary = "Actualizar un flujo de mensaje")
+    @Operation(summary = "Actualizar un flujo de mensaje", description = "Edita una conexión de mensajes después de comprobar proceso, extremos y versión.")
     @PutMapping("/{id}")
     public FlujoMensajeResponseDto actualizar(
             Principal principal,
@@ -68,7 +68,7 @@ public class FlujoMensajeController {
         return servicio.actualizar(sesion.id(principal), procesoId, id, datos);
     }
 
-    @Operation(summary = "Retirar un flujo de mensaje")
+    @Operation(summary = "Retirar un flujo de mensaje", description = "Retira lógicamente un flujo de mensaje con versión y confirmación explícitas.")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> retirar(
             Principal principal,

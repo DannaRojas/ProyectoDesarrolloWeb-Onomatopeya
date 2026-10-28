@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.proyecto.inicio.entity.Actividad;
+import com.proyecto.inicio.entity.enums.TipoActividad;
 import com.proyecto.inicio.entity.Arco;
 import com.proyecto.inicio.entity.Gateway;
 import com.proyecto.inicio.entity.Nodo;
@@ -85,7 +86,7 @@ class EntregaNodosArcosTests {
         actividad.setProceso(proceso(1L));
         actividad.setPool(pool(10L, actividad.getProceso()));
         actividad.setNombre("Validar solicitud");
-        actividad.setTipo(com.proyecto.inicio.entity.enums.TipoActividad.TAREA);
+        actividad.setTipo(TipoActividad.TAREA);
 
         assertThrows(IllegalArgumentException.class, () -> nodoService.guardarActividad(actividad));
         verify(actividadRepository, never()).save(any(Actividad.class));

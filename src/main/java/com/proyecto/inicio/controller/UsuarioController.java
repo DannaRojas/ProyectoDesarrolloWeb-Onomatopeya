@@ -40,19 +40,19 @@ public class UsuarioController {
     private final UsuarioService usuarios;
     private final UsuarioSesionService sesion;
 
-    @Operation(summary = "Listar usuarios de la empresa")
+    @Operation(summary = "Listar usuarios de la empresa", description = "Muestra los usuarios de la empresa actual, incluidos sus estados, sin exponer contraseñas ni tokens.")
     @GetMapping
     public List<UsuarioResponseDto> listar(Principal principal) {
         return usuarios.listarParaUsuario(sesion.id(principal));
     }
 
-    @Operation(summary = "Consultar un usuario de la empresa")
+    @Operation(summary = "Consultar un usuario de la empresa", description = "Devuelve un usuario por ID solamente si pertenece a la empresa del solicitante.")
     @GetMapping("/{id}")
     public UsuarioResponseDto consultar(Principal principal, @Positive @PathVariable Long id) {
         return usuarios.consultarParaUsuario(sesion.id(principal), id);
     }
 
-    @Operation(summary = "Invitar usuario a la empresa")
+    @Operation(summary = "Invitar usuario a la empresa", description = "Un administrador prepara una invitación con vencimiento de 24 horas para un correo no registrado.")
     @PostMapping("/invitaciones")
     @ResponseStatus(HttpStatus.CREATED)
     public InvitacionUsuarioResponseDto invitar(
@@ -60,7 +60,7 @@ public class UsuarioController {
         return invitaciones.invitar(sesion.id(principal), datos);
     }
 
-    @Operation(summary = "Cambiar rol de acceso de un usuario")
+    @Operation(summary = "Cambiar rol de acceso de un usuario", description = "Un administrador cambia el rol de un usuario activo de su empresa, sin dejarla sin administrador activo.")
     @PatchMapping("/{id}/rol")
     public UsuarioResponseDto cambiarRol(
             Principal principal,
@@ -71,7 +71,7 @@ public class UsuarioController {
         return usuarios.cambiarRol(sesion.id(principal), id, datos);
     }
 
-    @Operation(summary = "Desactivar un usuario")
+    @Operation(summary = "Desactivar un usuario", description = "Retira lógicamente un usuario tras confirmar la versión; conserva su historial y al menos un administrador activo.")
     @PostMapping("/{id}/desactivar")
     public UsuarioResponseDto desactivar(
             Principal principal,
@@ -82,7 +82,7 @@ public class UsuarioController {
         return usuarios.desactivar(sesion.id(principal), id, datos);
     }
 
-    @Operation(summary = "Aceptar una invitación")
+    @Operation(summary = "Aceptar una invitación", description = "Valida un token de invitación vigente, establece la contraseña y activa la cuenta una sola vez.")
     @PostMapping("/invitaciones/aceptar")
     public UsuarioResponseDto aceptarInvitacion(@Valid @RequestBody AceptarInvitacion datos) {
         return invitaciones.aceptar(datos);

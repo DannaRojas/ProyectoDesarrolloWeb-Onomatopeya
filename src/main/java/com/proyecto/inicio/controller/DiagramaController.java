@@ -50,13 +50,13 @@ public class DiagramaController {
     private final ArcoService arcos;
     private final UsuarioSesionService sesion;
 
-    @Operation(summary = "Listar pools del proceso")
+    @Operation(summary = "Listar pools del proceso", description = "Consulta los participantes vigentes del proceso, incluido el pool propietario.")
     @GetMapping("/pools")
     public List<PoolVista> pools(Principal actor, @Positive @PathVariable Long procesoId) {
         return pools.listar(sesion.id(actor), procesoId);
     }
 
-    @Operation(summary = "Crear un pool externo")
+    @Operation(summary = "Crear un pool externo", description = "Agrega un participante externo al diagrama; el pool propietario se crea junto con el proceso.")
     @PostMapping("/pools")
     @ResponseStatus(HttpStatus.CREATED)
     public PoolVista crearPool(
@@ -68,7 +68,7 @@ public class DiagramaController {
         return pools.crear(sesion.id(actor), procesoId, datos);
     }
 
-    @Operation(summary = "Actualizar un pool")
+    @Operation(summary = "Actualizar un pool", description = "Modifica un pool del proceso después de comprobar su versión y los permisos de estructura.")
     @PutMapping("/pools/{id}")
     public PoolVista editarPool(
             Principal actor,
@@ -81,7 +81,7 @@ public class DiagramaController {
         return pools.actualizar(sesion.id(actor), procesoId, id, datos);
     }
 
-    @Operation(summary = "Reordenar los pools")
+    @Operation(summary = "Reordenar los pools", description = "Guarda el nuevo orden de los pools vigentes dentro del mismo proceso.")
     @PutMapping("/pools/orden")
     public List<PoolVista> reordenarPools(
             Principal actor,
@@ -92,7 +92,7 @@ public class DiagramaController {
         return pools.reordenar(sesion.id(actor), procesoId, datos);
     }
 
-    @Operation(summary = "Retirar un pool")
+    @Operation(summary = "Retirar un pool", description = "Retira lógicamente un pool externo solo cuando las reglas sobre su contenido lo permiten.")
     @DeleteMapping("/pools/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void retirarPool(
@@ -106,7 +106,7 @@ public class DiagramaController {
         pools.retirar(sesion.id(actor), procesoId, id, datos);
     }
 
-    @Operation(summary = "Listar lanes de un pool")
+    @Operation(summary = "Listar lanes de un pool", description = "Muestra las lanes vigentes de un pool abierto del proceso.")
     @GetMapping("/pools/{poolId}/lanes")
     public List<LaneVista> lanes(
             Principal actor,
@@ -117,7 +117,7 @@ public class DiagramaController {
         return lanes.listar(sesion.id(actor), procesoId, poolId);
     }
 
-    @Operation(summary = "Crear una lane")
+    @Operation(summary = "Crear una lane", description = "Asocia un rol de proceso a una nueva lane dentro de un pool propio y abierto.")
     @PostMapping("/pools/{poolId}/lanes")
     @ResponseStatus(HttpStatus.CREATED)
     public LaneVista crearLane(
@@ -131,7 +131,7 @@ public class DiagramaController {
         return lanes.crear(sesion.id(actor), procesoId, poolId, datos);
     }
 
-    @Operation(summary = "Actualizar una lane")
+    @Operation(summary = "Actualizar una lane", description = "Edita la lane y valida que su rol pertenezca a la misma empresa del proceso.")
     @PutMapping("/pools/{poolId}/lanes/{id}")
     public LaneVista editarLane(
             Principal actor,
@@ -146,7 +146,7 @@ public class DiagramaController {
         return lanes.actualizar(sesion.id(actor), procesoId, poolId, id, datos);
     }
 
-    @Operation(summary = "Retirar una lane")
+    @Operation(summary = "Retirar una lane", description = "Retira lógicamente una lane sin actividades vigentes y con confirmación.")
     @DeleteMapping("/pools/{poolId}/lanes/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void retirarLane(
@@ -162,7 +162,7 @@ public class DiagramaController {
         lanes.retirar(sesion.id(actor), procesoId, poolId, id, datos);
     }
 
-    @Operation(summary = "Reordenar las lanes")
+    @Operation(summary = "Reordenar las lanes", description = "Cambia el orden de las lanes vigentes de un pool del proceso.")
     @PutMapping("/pools/{poolId}/lanes/orden")
     public List<LaneVista> reordenar(
             Principal actor,
@@ -175,13 +175,13 @@ public class DiagramaController {
         return lanes.reordenar(sesion.id(actor), procesoId, poolId, datos);
     }
 
-    @Operation(summary = "Listar nodos del proceso")
+    @Operation(summary = "Listar nodos del proceso", description = "Devuelve actividades, eventos y gateways vigentes del diagrama.")
     @GetMapping("/nodos")
     public List<NodoVista> nodos(Principal actor, @Positive @PathVariable Long procesoId) {
         return nodos.listar(sesion.id(actor), procesoId);
     }
 
-    @Operation(summary = "Crear un nodo")
+    @Operation(summary = "Crear un nodo", description = "Crea una actividad, evento o gateway en un pool permitido del proceso.")
     @PostMapping("/nodos")
     @ResponseStatus(HttpStatus.CREATED)
     public NodoVista crearNodo(
@@ -193,7 +193,7 @@ public class DiagramaController {
         return nodos.crear(sesion.id(actor), procesoId, datos);
     }
 
-    @Operation(summary = "Actualizar un nodo")
+    @Operation(summary = "Actualizar un nodo", description = "Edita la posición y propiedades del nodo según su tipo y versión vigente.")
     @PutMapping("/nodos/{id}")
     public NodoVista editarNodo(
             Principal actor,
@@ -206,7 +206,7 @@ public class DiagramaController {
         return nodos.actualizar(sesion.id(actor), procesoId, id, datos);
     }
 
-    @Operation(summary = "Retirar un nodo")
+    @Operation(summary = "Retirar un nodo", description = "Retira lógicamente un nodo y devuelve las advertencias de relaciones afectadas.")
     @DeleteMapping("/nodos/{id}")
     public List<String> retirarNodo(
             Principal actor,
@@ -219,13 +219,13 @@ public class DiagramaController {
         return nodos.retirar(sesion.id(actor), procesoId, id, datos);
     }
 
-    @Operation(summary = "Listar arcos del proceso")
+    @Operation(summary = "Listar arcos del proceso", description = "Consulta las conexiones vigentes entre nodos de un proceso accesible.")
     @GetMapping("/arcos")
     public List<ArcoVista> arcos(Principal actor, @Positive @PathVariable Long procesoId) {
         return arcos.listar(sesion.id(actor), procesoId);
     }
 
-    @Operation(summary = "Crear un arco")
+    @Operation(summary = "Crear un arco", description = "Conecta dos nodos del mismo proceso después de validar sus tipos y condiciones.")
     @PostMapping("/arcos")
     @ResponseStatus(HttpStatus.CREATED)
     public ArcoVista crearArco(
@@ -237,7 +237,7 @@ public class DiagramaController {
         return arcos.crear(sesion.id(actor), procesoId, datos);
     }
 
-    @Operation(summary = "Actualizar un arco")
+    @Operation(summary = "Actualizar un arco", description = "Edita una conexión y sus condiciones respetando las reglas de los gateways.")
     @PutMapping("/arcos/{id}")
     public ArcoVista editarArco(
             Principal actor,
@@ -250,7 +250,7 @@ public class DiagramaController {
         return arcos.actualizar(sesion.id(actor), procesoId, id, datos);
     }
 
-    @Operation(summary = "Retirar un arco")
+    @Operation(summary = "Retirar un arco", description = "Retira lógicamente una conexión del diagrama con control de versión.")
     @DeleteMapping("/arcos/{id}")
     public List<String> retirarArco(
             Principal actor,
