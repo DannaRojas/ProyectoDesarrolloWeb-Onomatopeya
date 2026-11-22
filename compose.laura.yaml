@@ -1,6 +1,7 @@
 services:
   api:
     build: .
+    restart: on-failure
     environment:
       DB_URL: jdbc:postgresql://host.docker.internal:55432/gestion_procesos
       DB_USERNAME: gestor_procesos

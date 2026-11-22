@@ -45,4 +45,23 @@ Para medir escrituras reales en PostgreSQL, con la demo del puerto 8084 abierta 
 
 Crear un archivo `.env` a partir de `.env.example` y poner una contraseña solo para la base local. Después ejecutar `docker compose up --build`. El contenedor de PostgreSQL guarda sus datos en un volumen local y la API queda en `http://127.0.0.1:8080`; no usa la base de Laura. `docker compose down` detiene los contenedores sin borrar ese volumen.
 
-Este Compose cubre el backend y su base principal local. El servicio `db_pruebas` se inicia solo con el perfil `pruebas` y guarda sus datos en un volumen diferente. El frontend Angular se integrará cuando exista su repositorio; por ahora no representa la solución completa de la segunda entrega.
+Este Compose cubre el backend y su base principal local. El servicio `db_pruebas` se inicia solo con el perfil `pruebas` y guarda sus datos en un volumen diferente.
+
+## Angular y backend en Docker
+
+Clonar el frontend junto a este repositorio en `../ui-WebOnomatopeya/ui-onomatopeya`, o definir `FRONTEND_DIR` con la ruta de su proyecto Angular. Desde esta carpeta, ejecutar una de estas opciones:
+
+```powershell
+# PostgreSQL aislado en Docker
+$env:DB_PASSWORD=Read-Host 'Contraseña de PostgreSQL local'
+docker compose -f compose.yaml -f compose.frontend.yaml up --build
+```
+
+```powershell
+# PostgreSQL de Laura: primero activar la VPN. En otra terminal, mantener abierto:
+# ssh -N -L 127.0.0.1:55432:127.0.0.1:5432 laura
+$env:LAURA_DB_PASSWORD=Read-Host 'Contraseña de PostgreSQL de Laura'
+docker compose -f compose.laura.yaml -f compose.frontend.yaml up --build
+```
+
+Abrir `http://127.0.0.1:4203`. Nginx envía `/api` al servicio `api` dentro de la misma red Docker; solo el backend se conecta a PostgreSQL. El túnel SSH debe seguir abierto mientras se usa la base de Laura. Si el puerto 4203 está ocupado, definir `FRONTEND_PORT` antes de iniciar. Para detener los servicios, repetir los mismos argumentos `-f` con `down`; no agregar `-v` si se quieren conservar los datos de la base local.

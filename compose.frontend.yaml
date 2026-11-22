@@ -1,0 +1,8 @@
+services:
+  frontend:
+    build:
+      context: ${FRONTEND_DIR:-../ui-WebOnomatopeya/ui-onomatopeya}
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-4203}:80"
+    depends_on:
+      - api
