@@ -1,0 +1,6 @@
+services:
+  api:
+    environment:
+      APP_DATOS_DEMO: "true"
+      APP_DATOS_DEMO_CLAVE: ${E2E_DEMO_PASSWORD:?Define E2E_DEMO_PASSWORD para ejecutar las pruebas}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
