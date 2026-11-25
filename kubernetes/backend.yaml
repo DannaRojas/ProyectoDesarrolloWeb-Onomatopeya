@@ -1,0 +1,53 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onomatopeya-backend
+  namespace: onomatopeya
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onomatopeya-backend
+  template:
+    metadata:
+      labels:
+        app: onomatopeya-backend
+    spec:
+      containers:
+        - name: backend
+          image: principal-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_URL
+              value: "jdbc:postgresql://host.minikube.internal:5432/gestion_procesos"
+            - name: DB_USERNAME
+              value: "gestor_procesos"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: onomatopeya-db-secret
+                  key: DB_PASSWORD
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "conexion-empresa"
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "update"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: onomatopeya
+spec:
+  selector:
+    app: onomatopeya-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+
