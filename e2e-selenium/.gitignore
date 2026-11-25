@@ -1,0 +1,10 @@
+@"
+# Python / Selenium
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+e2e-selenium/reports/*.png
+fallo_*.png
+"@ | Add-Content -Encoding UTF8 .gitignore
